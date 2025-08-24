@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Barangay Management System</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        input, button, select { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        pre { background-color: #f4f4f4; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BMS - Barangay Management System</h1>
+        
+        <h2>Step 1: Register a Resident (sa RIS)</h2>
+        <p id="regMessage"></p>
+        
+        <hr>
+        
+        <h2>Step 2: Get Resident Info (galing sa RIS)</h2>
+        <input type="text" id="getInfoId" placeholder="Enter Resident ID to search">
+        <button onclick="getResidentInfo()">Search</button>
+        <p id="searchMessage"></p>
+
+        <hr>
+
+        <div id="infoDisplaySection" style="display:none;">
+            <h3>Resident Information:</h3>
+            <p><strong>Full Name:</strong> <span id="displayFullName"></span></p>
+            <p><strong>Address:</strong> <span id="displayAddress"></span></p>
+            <p><strong>Phone:</strong> <span id="displayPhone"></span></p>
+            </div>
+
+        <pre id="residentInfo"></pre>
+    </div>
+
+    <script>
+        // ... [I-paste dito ang buong JavaScript code] ...
+
+        async function getResidentInfo() {
+            const id = document.getElementById('getInfoId').value;
+            const infoEl = document.getElementById('residentInfo');
+            const messageEl = document.getElementById('searchMessage');
+            const infoDisplaySection = document.getElementById('infoDisplaySection');
+
+            if (!id) {
+                messageEl.textContent = 'Please enter a resident ID.';
+                infoDisplaySection.style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost/ITE-SIA/RIS/ris_api.php/${id}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    // I-populate ang mga span elements ng data
+                    document.getElementById('displayFullName').textContent = data.full_name;
+                    document.getElementById('displayAddress').textContent = data.address;
+                    document.getElementById('displayPhone').textContent = data.phone;
+                    
+                    // Ipakita ang information section
+                    infoDisplaySection.style.display = 'block';
+
+                    infoEl.textContent = JSON.stringify(data, null, 2);
+                    messageEl.textContent = 'Information retrieved successfully.';
+                } else {
+                    infoDisplaySection.style.display = 'none';
+                    infoEl.textContent = '';
+                    messageEl.textContent = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                infoDisplaySection.style.display = 'none';
+                messageEl.textContent = `Error connecting to RIS server: ${error.message}`;
+                infoEl.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>

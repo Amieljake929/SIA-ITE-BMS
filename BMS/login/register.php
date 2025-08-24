@@ -276,7 +276,7 @@ if (isset($_GET['error'])) {
                 <option value="" disabled selected>Select Status</option>
                 <option value="Single">Single</option>
                 <option value="Married">Married</option>
-                <option value="Widowed">Widowed</option>
+                <option value="Widow/Widower">Widow/Widower</option>
                 <option value="Separated">Separated</option>
                 <option value="Divorced">Divorced</option>
               </select>
@@ -289,10 +289,12 @@ if (isset($_GET['error'])) {
                 <option value="" disabled selected>Select Status</option>
                 <option value="Employed">Employed</option>
                 <option value="Unemployed">Unemployed</option>
-                <option value="Self-Employed">Self-Employed</option>
+                <option value="Self-employed">Self-employed</option>
                 <option value="Student">Student</option>
                 <option value="Retired">Retired</option>
-                <option value="OFW">OFW</option>
+                <option value="Homemaker">Homemaker</option>
+                <option value="Others">Others</option>
+
               </select>
             </div>
           </div>
@@ -351,7 +353,9 @@ if (isset($_GET['error'])) {
                 <option value="" disabled selected>Select Type</option>
                 <option value="Permanent">Permanent</option>
                 <option value="Temporary">Temporary</option>
-                <option value="Newly Registered">Newly Registered</option>
+                <option value="Voter">Voter</option>
+                <option value="Non-Voter">Non-Voter</option>
+
               </select>
             </div>
             <div>

@@ -1,0 +1,34 @@
+[2025-08-24 14:17:45]
+Request: {"full_name":"Jesse Barrera","email":"jessebarrera@gmail.com","dob":"2004-04-09","pob":"Valenzuela","age":21,"gender":"Male","civil_status":"Single","nationality":"Filipino","religion":"Catholic","address":"Tsora","phone":"09123238585","resident_type":"Permanent","stay_length":1,"employment_status":"Employed","is_voter":0,"is_student":0}
+Response (404): <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL was not found on this server.</p>
+<hr>
+<address>Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.2.12 Server at localhost Port 80</address>
+</body></html>
+
+Curl Error: 
+
+[2025-08-24 14:22:14]
+Request: {"full_name":"Jesse Barrera","email":"jessebarrera@gmail.com","dob":"2004-04-09","pob":"Valenzuela","age":21,"gender":"Male","civil_status":"Single","nationality":"Filipino","religion":"Catholic","address":"Tsora","phone":"09978723222","resident_type":"Permanent","stay_length":1,"employment_status":"Employed","is_voter":0,"is_student":0}
+Response (400): {"error":"Incomplete data. Missing or empty field: id"}
+Curl Error: 
+
+[2025-08-24 14:25:34]
+Request: {"full_name":"Jesse Barrera","email":"jessebarrera@gmail.com","dob":"2004-04-09","pob":"Valenzuela","age":21,"gender":"Male","civil_status":"Single","nationality":"Filipino","religion":"Catholic","address":"Tsora","phone":"09978723222","resident_type":"Permanent","stay_length":1,"employment_status":"Employed","is_voter":0,"is_student":0}
+Response (400): {"error":"Invalid gender. Must be 'male' or 'female'."}
+Curl Error: 
+
+[2025-08-24 14:26:11]
+Request: {"full_name":"Jesse Barrera","email":"jessebarrera@gmail.com","dob":"2004-04-09","pob":"Valenzuela","age":21,"gender":"Male","civil_status":"Single","nationality":"Filipino","religion":"Catholic","address":"Tsora","phone":"09978723222","resident_type":"Permanent","stay_length":1,"employment_status":"Employed","is_voter":0,"is_student":0}
+Response (400): {"error":"Invalid civil_status. Allowed: single, married, widow\/widower, separated"}
+Curl Error: 
+
+[2025-08-24 14:27:35]
+Request: {"full_name":"Jesse Barrera","email":"jessebarrera@gmail.com","dob":"2004-04-09","pob":"Valenzuela","age":21,"gender":"Male","civil_status":"Single","nationality":"Filipino","religion":"Catholic","address":"Tsora","phone":"09978723222","resident_type":"Permanent","stay_length":1,"employment_status":"Employed","is_voter":0,"is_student":0}
+Response (409): {"error":"ID or email already registered."}
+Curl Error: 
+
