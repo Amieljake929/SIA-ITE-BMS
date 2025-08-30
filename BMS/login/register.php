@@ -20,7 +20,7 @@ if (isset($_GET['error'])) {
       color: #212529;
       font-size: 16px;
       line-height: 1.7;
-      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233a9d6a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      background-image: url("image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233a9d6a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
     .btn-primary {
       background-color: #3a9d6a;
@@ -100,6 +100,20 @@ if (isset($_GET['error'])) {
       font-size: 0.875rem;
       color: #6b7280;
     }
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #3a9d6a;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
     @media (max-width: 1024px) {
       .lg\:flex {
         flex-direction: column;
@@ -157,6 +171,27 @@ if (isset($_GET['error'])) {
 
         <!-- Registration Form -->
         <form id="registerForm" class="space-y-5" novalidate>
+
+          <!-- Reference Number -->
+          <div class="mb-5">
+            <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-2">
+              <i class="fas fa-barcode text-gray-500 mr-1"></i> Reference Number
+            </label>
+            <div class="input-group relative">
+              <i class="fas fa-barcode input-icon"></i>
+              <input
+                type="text"
+                id="reference_number"
+                name="reference_number"
+                class="form-input has-icon text-base"
+                placeholder="ABC12-XYZ34-5MN6"
+                required
+              />
+              <span id="loadingSpinner" class="loading hidden"></span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Check your email for your Reference Number.</p>
+          </div>
+
           <!-- Full Name -->
           <div class="mb-5">
             <label for="fullname" class="block text-sm font-medium text-gray-700 mb-2">
@@ -170,6 +205,7 @@ if (isset($_GET['error'])) {
                 name="fullname"
                 class="form-input has-icon text-base"
                 placeholder="Juan Dela Cruz"
+                readonly
                 required
               />
             </div>
@@ -188,6 +224,7 @@ if (isset($_GET['error'])) {
                 name="email"
                 class="form-input has-icon text-base"
                 placeholder="you@example.com"
+                readonly
                 required
               />
             </div>
@@ -222,6 +259,7 @@ if (isset($_GET['error'])) {
                 id="dob"
                 name="dob"
                 class="form-input text-base"
+                readonly
                 required
               />
             </div>
@@ -294,7 +332,6 @@ if (isset($_GET['error'])) {
                 <option value="Retired">Retired</option>
                 <option value="Homemaker">Homemaker</option>
                 <option value="Others">Others</option>
-
               </select>
             </div>
           </div>
@@ -355,7 +392,6 @@ if (isset($_GET['error'])) {
                 <option value="Temporary">Temporary</option>
                 <option value="Voter">Voter</option>
                 <option value="Non-Voter">Non-Voter</option>
-
               </select>
             </div>
             <div>
@@ -455,7 +491,73 @@ if (isset($_GET['error'])) {
   </div>
 
   <script>
-    // Auto-calculate Age from DOB
+    // Auto-fill form when Reference Number is entered
+    document.getElementById('reference_number').addEventListener('blur', function () {
+      const refNumber = this.value.trim().toUpperCase();
+      if (!refNumber || !/^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(refNumber)) return;
+
+      const loading = document.getElementById('loadingSpinner');
+      const errorContainer = document.getElementById('errorContainer');
+      loading.classList.remove('hidden');
+      errorContainer.classList.add('hidden');
+
+      // Fetch resident data
+      fetch('http://localhost/ITE-SIA/RIS/ris_api.php?ref=' + refNumber, {
+        headers: { 'X-API-Key': 'my-secret-barangay-api-key-123' }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // Check if already registered via email
+        return fetch('check_registered.php?email=' + encodeURIComponent(data.email))
+          .then(res => res.json())
+          .then(check => {
+            if (check.registered) {
+              throw new Error("This account has already been created. Reference Number is for one-time use only.");
+            }
+
+            // Auto-fill ALL fields
+            document.getElementById('fullname').value = data.full_name || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('dob').value = data.dob || '';
+            document.getElementById('pob').value = data.pob || '';
+            document.getElementById('gender').value = data.gender || '';
+            document.getElementById('civil_status').value = data.civil_status || '';
+            document.getElementById('nationality').value = data.nationality || '';
+            document.getElementById('religion').value = data.religion || '';
+            document.getElementById('address').value = data.address || '';
+            document.getElementById('phone').value = data.phone || '';
+            document.getElementById('resident_type').value = data.resident_type || '';
+            document.getElementById('length_of_stay').value = data.stay_length || '';
+            document.getElementById('employment_status').value = data.employment_status || '';
+
+            // Age calculation
+            const dobInput = document.getElementById('dob');
+            if (dobInput.value) {
+              const dob = new Date(dobInput.value);
+              const today = new Date();
+              let age = today.getFullYear() - dob.getFullYear();
+              const monthDiff = today.getMonth() - dob.getMonth();
+              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                age--;
+              }
+              document.getElementById('age').value = age >= 0 ? age : '';
+            }
+
+            loading.classList.add('hidden');
+          });
+      })
+      .catch(err => {
+        errorContainer.textContent = "Error: " + err.message;
+        errorContainer.classList.remove('hidden');
+        loading.classList.add('hidden');
+      });
+    });
+
+    // Auto-calculate Age
     document.getElementById('dob').addEventListener('change', function () {
       const dob = new Date(this.value);
       const today = new Date();

@@ -103,7 +103,7 @@ if ($stmt_check->get_result()->num_rows > 0) {
 }
 $stmt_check->close();
 
-// ---- Generate next 8-digit ID safely (transaction + row lock) ----
+// ---- Generate next 8-digit internal ID safely (transaction + row lock) ----
 $conn->begin_transaction();
 
 $lastId = 0;
@@ -112,16 +112,16 @@ if ($res && $res->num_rows === 1) {
     $row = $res->fetch_assoc();
     $lastId = (int)$row['id'];
 }
-$new_id = str_pad($lastId + 1, 8, '0', STR_PAD_LEFT);
-if ($new_id === '00000000') $new_id = '00000001';
+$new_internal_id = str_pad($lastId + 1, 8, '0', STR_PAD_LEFT);
+if ($new_internal_id === '00000000') $new_internal_id = '00000001';
 
 // Prepare INSERT statement
 $sql = "INSERT INTO registration (
-    id, full_name, email, dob, pob, age, gender, civil_status,
+    id, status, full_name, email, dob, pob, age, gender, civil_status,
     nationality, religion, address, phone, resident_type, stay_length,
     employment_status, valid_id_type, valid_id_number, valid_id_image, selfie_with_id,
     is_senior_citizen, is_pwd, is_solo_parent, is_voter, is_student, is_indigenous
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+) VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
@@ -132,7 +132,7 @@ if (!$stmt) {
 
 $stmt->bind_param(
     "sssssisssssssisssssiiiiii",
-    $new_id, $full_name, $email, $dob, $pob, $age, $gender, $civil_status,
+    $new_internal_id, $full_name, $email, $dob, $pob, $age, $gender, $civil_status,
     $nationality, $religion, $address, $phone, $resident_type, $stay_length,
     $employment_status, $valid_id_type, $valid_id_number, $valid_id_image, $selfie_with_id,
     $is_senior_citizen, $is_pwd, $is_solo_parent, $is_voter, $is_student, $is_indigenous
@@ -141,7 +141,7 @@ $stmt->bind_param(
 // Execute and redirect
 if ($stmt->execute()) {
     $conn->commit();
-    header("Location: ris_registration_form.php?success=" . urlencode("Registration successful! ID: $new_id"));
+    header("Location: ris_registration_form.php?success=" . urlencode("Registration successful! Your application is pending approval."));
 } else {
     $conn->rollback();
     error_log("Insert failed: " . $stmt->error);

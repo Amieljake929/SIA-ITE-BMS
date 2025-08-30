@@ -1,12 +1,12 @@
 <?php
-// ris_api.php - Updated for validation-only use by BMS
+// ris_api.php - Final version with is_registered check
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-API-Key");
 header("Content-Type: application/json; charset=UTF-8");
 
-// Handle OPTIONS
+// Handle OPTIONS (preflight)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
@@ -112,7 +112,7 @@ function handlePostRequest($conn) {
     }
     $check->close();
 
-    // Auto-generate ID
+    // Auto-generate internal ID (00000001, etc.)
     $res = $conn->query("SELECT MAX(id) as max_id FROM registration FOR UPDATE");
     $row = $res->fetch_assoc();
     $lastId = (int)($row['max_id'] ?? '00000000');
@@ -145,34 +145,139 @@ function handlePostRequest($conn) {
         echo json_encode(["message" => "Resident registered.", "id" => $new_id]);
     } else {
         http_response_code(500);
-        echo json_encode(["error" => "Insert failed"]);
+        echo json_encode(["error" => "Insert failed: " . $stmt->error]);
     }
     $stmt->close();
 }
 
 // ------------------------------
-// GET: Validate if resident exists
+// GET: Validate if resident exists by reference_number, resident_id, email, or phone
 // ------------------------------
 function handleGetRequest($conn) {
     $email = $_GET['email'] ?? '';
     $phone = $_GET['phone'] ?? '';
-    $id = $_GET['id'] ?? '';
+    $id = $_GET['id'] ?? '';        // 8-digit resident_id (e.g., 25000001)
+    $ref = $_GET['ref'] ?? '';      // Reference Number (e.g., ABC12-XYZ34-5MN6)
 
-    if (!$email && !$phone && !$id) {
+    if (!$email && !$phone && !$id && !$ref) {
         http_response_code(400);
-        echo json_encode(["error" => "Provide email, phone, or id"]);
+        echo json_encode(["error" => "Provide email, phone, id, or ref"]);
         return;
     }
 
-    $sql = "SELECT id, full_name, email, phone FROM registration WHERE ";
+    // Case 1: Lookup by reference_number
+    if ($ref) {
+        $stmt = $conn->prepare("
+            SELECT r.full_name, r.email, r.dob, r.phone, r.pob, r.gender, 
+                   r.civil_status, r.nationality, r.religion, r.address, 
+                   r.resident_type, r.stay_length, r.employment_status
+            FROM registration r
+            JOIN residents_id rid ON r.id = rid.registration_id
+            WHERE rid.reference_number = ? AND r.status = 'approved'
+        ");
+        $stmt->bind_param("s", $ref);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            http_response_code(404);
+            echo json_encode(["error" => "Invalid or unapproved reference number."]);
+            $stmt->close();
+            return;
+        }
+
+        $data = $result->fetch_assoc();
+        $stmt->close();
+
+        // Check if already registered in BMS
+        $bms_conn = new mysqli("localhost:3307", "root", "", "bms");
+        if ($bms_conn->connect_error) {
+            http_response_code(500);
+            echo json_encode(["error" => "BMS connection failed"]);
+            return;
+        }
+
+        $check = $bms_conn->prepare("SELECT id FROM users WHERE email = ?");
+        $check->bind_param("s", $data['email']);
+        $check->execute();
+        $is_registered = $check->get_result()->num_rows > 0;
+        $check->close();
+        $bms_conn->close();
+
+        // Add flag
+        $data['is_registered'] = $is_registered;
+
+        http_response_code(200);
+        echo json_encode($data);
+        return;
+    }
+
+    // Case 2: Lookup by resident_id (25000001)
+    if ($id) {
+        $stmt = $conn->prepare("SELECT registration_id FROM residents_id WHERE resident_id = ?");
+        $stmt->bind_param("s", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            http_response_code(404);
+            echo json_encode(["error" => "Resident ID not found in RIS (not approved yet)."]);
+            $stmt->close();
+            return;
+        }
+
+        $row = $result->fetch_assoc();
+        $registration_id = $row['registration_id'];
+
+        $stmt2 = $conn->prepare("
+            SELECT full_name, email, dob, phone, pob, gender, civil_status, 
+                   nationality, religion, address, resident_type, stay_length, employment_status
+            FROM registration 
+            WHERE id = ? AND status = 'approved'
+        ");
+        $stmt2->bind_param("s", $registration_id);
+        $stmt2->execute();
+        $result2 = $stmt2->get_result();
+
+        if ($result2->num_rows === 0) {
+            http_response_code(404);
+            echo json_encode(["error" => "No approved registration found."]);
+            $stmt2->close();
+            return;
+        }
+
+        $data = $result2->fetch_assoc();
+
+        // Check if already registered in BMS
+        $bms_conn = new mysqli("localhost:3307", "root", "", "bms");
+        if ($bms_conn->connect_error) {
+            http_response_code(500);
+            echo json_encode(["error" => "BMS connection failed"]);
+            return;
+        }
+
+        $check = $bms_conn->prepare("SELECT id FROM users WHERE email = ?");
+        $check->bind_param("s", $data['email']);
+        $check->execute();
+        $is_registered = $check->get_result()->num_rows > 0;
+        $check->close();
+        $bms_conn->close();
+
+        $data['is_registered'] = $is_registered;
+
+        http_response_code(200);
+        echo json_encode($data);
+        $stmt2->close();
+        $stmt->close();
+        return;
+    }
+
+    // Case 3: Fallback to email or phone
+    $sql = "SELECT id, full_name, email, phone, dob FROM registration WHERE ";
     $params = [];
     $types = "";
 
-    if ($id) {
-        $sql .= "id = ?";
-        $params[] = $id;
-        $types .= "s";
-    } elseif ($email) {
+    if ($email) {
         $sql .= "email = ?";
         $params[] = $email;
         $types .= "s";
@@ -190,8 +295,22 @@ function handleGetRequest($conn) {
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
+        $data = $result->fetch_assoc();
+
+        // Check if already registered in BMS
+        $bms_conn = new mysqli("localhost:3307", "root", "", "bms");
+        if (!$bms_conn->connect_error) {
+            $check = $bms_conn->prepare("SELECT id FROM users WHERE email = ?");
+            $check->bind_param("s", $data['email']);
+            $check->execute();
+            $is_registered = $check->get_result()->num_rows > 0;
+            $check->close();
+            $bms_conn->close();
+            $data['is_registered'] = $is_registered;
+        }
+
         http_response_code(200);
-        echo json_encode($result->fetch_assoc());
+        echo json_encode($data);
     } else {
         http_response_code(404);
         echo json_encode(["error" => "Not found in RIS"]);
