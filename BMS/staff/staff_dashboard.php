@@ -6,36 +6,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Staff') {
 }
 
 // Database connection
-$conn = new mysqli("localhost:3307", "root", "", "bms");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
-// Define age group queries across both tables
-$age_groups = [
-    '0-17' => "SELECT 
-                  (SELECT COUNT(*) FROM residents WHERE age BETWEEN 0 AND 17) +
-                  (SELECT COUNT(*) FROM officials WHERE age BETWEEN 0 AND 17) AS count",
-    '18-35' => "SELECT 
-                  (SELECT COUNT(*) FROM residents WHERE age BETWEEN 18 AND 35) +
-                  (SELECT COUNT(*) FROM officials WHERE age BETWEEN 18 AND 35) AS count",
-    '36-60' => "SELECT 
-                  (SELECT COUNT(*) FROM residents WHERE age BETWEEN 36 AND 60) +
-                  (SELECT COUNT(*) FROM officials WHERE age BETWEEN 36 AND 60) AS count",
-    '60+' => "SELECT 
-                  (SELECT COUNT(*) FROM residents WHERE age > 60) +
-                  (SELECT COUNT(*) FROM officials WHERE age > 60) AS count"
-];
-
-$population_data = [];
-
-foreach ($age_groups as $label => $query) {
-    $result = $conn->query($query);
-    $row = $result->fetch_assoc();
-    $population_data[$label] = (int)$row['count'];
-}
-
-$announcements = $conn->query("SELECT * FROM announcements ORDER BY created_at DESC");
+include '../login/db_connect.php';
 
 $conn->close();
 ?>
@@ -45,537 +16,363 @@ $conn->close();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Barangay Resident Dashboard</title>
+  <title>BagbagCare - Staff Portal</title>
+
+  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
   <style>
-    body {
-      background-color: #f8f9fa;
-      color: #212529;
-      font-size: 16px;
-      line-height: 1.7;
-    }
-    .card {
-      transition: all 0.3s ease;
-      border: 1px solid #e0e0e0;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-      border-color: #3a9d6a;
-    }
-    .card:focus {
-      outline: 3px solid #f9c846;
-      outline-offset: 2px;
-    }
-    .icon-wrapper {
-      background: linear-gradient(135deg, #e8f5e8, #f0f9f0);
-      border: 2px solid #3a9d6a;
-      border-radius: 50%;
-      width: 80px;
-      height: 80px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px auto;
-    }
-    .icon-wrapper i {
-      font-size: 32px;
-      color: #3a9d6a;
-    }
-    .logo-circle {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      border: 3px solid #3a9d6a;
-      overflow: hidden;
-    }
-    .logo-circle img {
-      width: 80%;
-      height: 80%;
-      object-fit: contain;
-    }
-    .btn-primary {
-      background-color: #3a9d6a;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-    }
-    .btn-primary:hover {
-      background-color: #2d7c4a;
-    }
-    .text-accent {
-      color: #f9c846;
-    }
-    .bg-header {
-      background: linear-gradient(to right, #1e40af, #1e3a8a);
-    }
-    .back-to-top {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background-color: #3a9d6a;
-      color: white;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-      transition: background 0.3s;
-      z-index: 100;
-    }
-    .back-to-top:hover {
-      background-color: #2d7c4a;
+    /* Smooth transition for slideshow */
+    #slideshow {
+      transition: background-image 1s ease-in-out;
       cursor: pointer;
+      position: relative;
     }
 
-    /* Slideshow Styles */
-    .slideshow-container {
-      position: relative;
-      max-width: 100%;
-      margin: 0 auto;
-      overflow: hidden;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      height: 560px;
-    }
-    .slide {
+    #slideshow:hover::after {
+      content: 'Click to view';
       position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      opacity: 1;
+      transition: opacity 0.3s;
+    }
+
+    /* Ensure 2 cards per row on all devices */
+    .card-container {
+      width: calc(107% - 0.75rem);
+    }
+
+    /* Lightbox Modal */
+    #lightbox {
+      display: none;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
       opacity: 0;
-      transition: opacity 1s ease-in-out;
+      transition: opacity 0.3s ease;
     }
-    .slide.active {
+
+    #lightbox.show {
       opacity: 1;
-      z-index: 1;
-    }
-    .slide img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      border-radius: 12px;
-    }
-    .slideshow-dots {
-      text-align: center;
-      margin-top: 12px;
-    }
-    .dot {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      margin: 0 6px;
-      background-color: #ccc;
-      border-radius: 50%;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    .dot.active {
-      background-color: #3a9d6a;
-    }
-    .prev, .next {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 40px;
-      height: 40px;
-      background-color: rgba(0, 0, 0, 0.5);
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      cursor: pointer;
-      z-index: 10;
-      border: 2px solid white;
-    }
-    .prev {
-      left: 10px;
-    }
-    .next {
-      right: 10px;
-    }
-    .prev:hover, .next:hover {
-      background-color: #3a9d6a;
     }
 
-    /* Dropdown Menu */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-    .menu-button {
-      width: 50px;
-      height: 50px;
-      border: 2px solid #fff;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      background-color: transparent;
-      transition: all 0.3s ease;
-      font-size: 24px;
-      color: white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-    .menu-button:hover {
-      background-color: rgba(255,255,255,0.1);
-      transform: scale(1.05);
-    }
-    .menu-button i {
-      font-size: 20px;
-      color: white;
-    }
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 100%;
-      min-width: 180px;
-      background-color: white;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    #lightbox img {
+      max-width: 90%;
+      max-height: 90vh;
+      object-fit: contain;
       border-radius: 8px;
-      z-index: 50;
-      overflow: hidden;
-      margin-top: 8px;
-    }
-    .dropdown-content a {
-      color: #2d3748;
-      padding: 12px 16px;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-      transition: background-color 0.2s;
-    }
-    .dropdown-content a:hover {
-      background-color: #f7fafc;
-    }
-    .dropdown-content a i {
-      width: 20px;
-      color: #3a9d6a;
-    }
-    .dropdown.active .dropdown-content {
-      display: block;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 0.3s ease;
     }
 
-    /* Marquee Style */
-    .marquee {
-      background-color: #1e40af;
-      color: white;
-      padding: 10px 0;
-      white-space: nowrap;
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .marquee-content {
-      display: inline-block;
-      animation: marquee 15s linear infinite;
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-    @keyframes marquee {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
     }
 
-    /* Responsive */
-    @media (max-width: 640px) {
-      .slideshow-container {
-        height: 280px;
-      }
-      .slide img {
-        height: 280px;
-      }
-      .prev, .next {
-        width: 32px;
-        height: 32px;
-        font-size: 16px;
-      }
-      .menu-button {
-        width: 40px;
-        height: 40px;
-      }
+    /* Responsive slideshow height */
+    #slideshow {
+      height: 16rem;
+    }
+
+    @media (min-width: 640px) {
+      #slideshow { height: 26rem; }
+    }
+    @media (min-width: 768px) {
+      #slideshow { height: 28rem; }
+    }
+    @media (min-width: 1024px) {
+      #slideshow { height: 30rem; }
     }
   </style>
 </head>
-<body class="font-sans leading-relaxed selection:bg-yellow-200 selection:text-gray-800">
+<body class="bg-gray-50 text-gray-800 font-sans flex flex-col min-h-screen">
 
-  <!-- Header -->
-  <header class="text-white shadow-lg relative">
-    <div class="absolute inset-0 bg-gradient-to-r from-green-500 via-yellow-400 to-yellow-400"></div>
-    <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+  <!-- Top Bar -->
+  <div class="bg-gradient-to-r from-green-800 to-green-900 text-white text-sm px-6 py-3 flex justify-between items-center shadow-md">
+    <div class="flex-1">
+      <span id="datetime" class="font-medium tracking-wide">THURSDAY, AUGUST 7, 2025, 11:16:33 AM</span>
+    </div>
+    <div class="flex-shrink-0">
+      <img src="../images/Bagbag.png" alt="Bagbag Logo" class="h-12 object-contain drop-shadow" />
+    </div>
+  </div>
 
-    <div class="container mx-auto px-4 py-4 relative z-10">
-      <div class="header-content flex items-center justify-between gap-2 text-white">
-        <!-- Left: Date -->
-        <div class="header-date text-sm opacity-90">
-          <i class="far fa-calendar-alt mr-1"></i>
-          <span id="current-date">Thursday, August 7, 2025</span>
-        </div>
+  <!-- Main Header -->
+  <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4 relative">
+    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+            <h1 class="text-xl font-bold text-green-800">BagbagCare | Staff</h1>
+      <div class="flex items-center space-x-4"></div>
 
-        <!-- Center: Logo -->
-        <div class="header-logo logo-circle mx-4">
-          <img src="../images/Bagbag.png" alt="Barangay Logo">
-        </div>
+      <!-- User Info with Dropdown -->
+      <div class="relative inline-block text-right">
+        <button id="userMenuButton" class="flex items-center font-medium cursor-pointer text-sm focus:outline-none whitespace-nowrap">
+          <span class="text-gray-800">Logged in:</span>
+          <span class="text-blue-700 ml-1">
+            <?php echo htmlspecialchars($_SESSION['full_name']); ?>
+          </span>
+          <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
+        </button>
 
-        <!-- Right: Menu Button -->
-        <div class="header-user dropdown" id="menuDropdown">
-          <button class="menu-button" onclick="toggleMenu()">
-            <i class="fas fa-bars"></i>
-          </button>
-
-          <!-- Dropdown Links -->
-          <div class="dropdown-content">
-            <a href="#">
-              <i class="fas fa-home"></i> Home
-            </a>
-            <a href="#">
-              <i class="fas fa-user-circle"></i> My Profile
-            </a>
-            <a href="../login/logout_admin_and_officials.php">
-              <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-          </div>
+        <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-10">
+          <ul class="py-2 text-sm">
+            <li>
+              <a href="#" class="block px-5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-800 transition-colors duration-150 flex items-center">
+                <i class="fas fa-user text-green-600 mr-3"></i> Profile
+              </a>
+            </li>
+            <li>
+              <a href="../login/logout_official.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
+                <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Marquee Navigation -->
-  <div class="marquee">
-    <div class="marquee-content">
-      Welcome to our Brgy Banaba Services System &nbsp; • &nbsp; 
-      Accessible, Trusted, and Efficient Services for All Residents &nbsp; • &nbsp; 
-      We're here to help you every step of the way!
+  <!-- Slideshow (Clickable) -->
+  <section id="slideshow" class="w-full bg-center bg-cover bg-no-repeat relative cursor-pointer transition-all duration-1000 ease-in-out" onclick="openLightbox()">
+    <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+    <div class="absolute bottom-6 left-6 text-white max-w-lg z-10">
+      <h2 id="slideTitle" class="text-2xl md:text-3xl font-bold"></h2>
+      <p id="slideDesc" class="text-sm md:text-base mt-1 hidden sm:block"></p>
+    </div>
+  </section>
+
+  <!-- Lightbox Modal -->
+  <div id="lightbox" class="hidden fixed inset-0 items-center justify-center">
+    <span id="closeLightbox" class="absolute top-5 right-5 text-white text-3xl cursor-pointer hover:text-gray-300 z-20">&times;</span>
+    <img id="lightboxImage" src="" alt="Enlarged slide image" />
+  </div>
+
+  <!-- Scroll Indicator -->
+  <div class="flex justify-center mt-4">
+    <div class="text-white text-2xl animate-bounce">
+      <i class="fas fa-chevron-down text-green-700 bg-white bg-opacity-20 p-2 rounded-full w-12 h-12 flex items-center justify-center"></i>
     </div>
   </div>
 
   <!-- Main Content -->
-  <main class="container mx-auto px-4 py-8 max-w-6xl">
-    <section class="text-center mb-8 px-4">
-      <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 mb-4 leading-tight">
-        Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?>
-      </h1>
-      <p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-6">
-        To our Barangay Resident Dashboard
-      </p><br><br>
-
-      <!-- Image Slideshow -->
-      <div class="slideshow-container mx-auto">
-        <div class="slide active">
-          <img src="../images/4-bagbag.png" alt="Community Service">
-        </div>
-        <div class="slide">
-          <img src="../images/BARANGAY-HOTLINE.png" alt="Health Program">
-        </div>
-        <div class="slide">
-          <img src="../images/committess.png" alt="Education">
-        </div>
-        <div class="slide">
-          <img src="../images/A.jpg" alt="Environment">
-        </div>
-        <div class="slide">
-          <img src="../images/B.jpg" alt="Security">
-        </div>
-        <div class="slide">
-          <img src="../images/2.jpg" alt="Barangay Event">
-        </div>
-        <div class="slide">
-          <img src="../images/4.jpg" alt="Financial Assistance">
-        </div>
-        <div class="slide">
-          <img src="../images/1.jpg" alt="Senior Citizens">
-        </div>
-
-        <button class="prev" onclick="moveSlide(-1)">&#10094;</button>
-        <button class="next" onclick="moveSlide(1)">&#10095;</button>
-      </div>
-
-      <!-- Indicators -->
-      <div class="slideshow-dots mt-4">
-        <span class="dot active" onclick="currentSlide(1)"></span>
-        <span class="dot" onclick="currentSlide(2)"></span>
-        <span class="dot" onclick="currentSlide(3)"></span>
-        <span class="dot" onclick="currentSlide(4)"></span>
-        <span class="dot" onclick="currentSlide(5)"></span>
-        <span class="dot" onclick="currentSlide(6)"></span>
-        <span class="dot" onclick="currentSlide(7)"></span>
-        <span class="dot" onclick="currentSlide(8)"></span>
-      </div><br>
-    </section>
-
-    <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 mb-4 leading-tight text-center">
-      Please choose from the following services
+  <main class="container mx-auto px-4 py-8 flex-grow">
+    <h1 class="text-2xl md:text-3xl font-bold text-center text-green-800 mb-10 tracking-wide">
+      PLEASE CHOOSE FROM THE FOLLOWING SERVICES
     </h1>
-    <p class="text-gray-600 text-base md:text-lg max-w-2xl mx-auto mb-6 text-center">
-      We're here to help you access barangay services easily and safely.
-    </p>
 
     <!-- Service Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-2 md:px-6">
-      <!-- Official Committee -->
-      <a href="#" class="card bg-white p-6 text-center shadow-md hover:shadow-xl focus:shadow-xl focus:outline-none">
-        <div class="icon-wrapper">
-          <i class="fas fa-users"></i>
+    <div class="grid grid-cols-2 gap-5 sm:gap-6 max-w-4xl mx-auto mb-12">
+      <!-- Card 1 -->
+      <a href="#" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+        <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
+          <i class="fas fa-gavel"></i>
         </div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-2">Official Committee</h3>
-        <p class="text-gray-600 text-sm">Meet your barangay leaders and officials</p>
+        <h3 class="text-base sm:text-lg font-semibold text-gray-800">Official Committee</h3>
       </a>
 
-      <!-- Emergency Contact -->
-      <a href="#" class="card bg-white p-6 text-center shadow-md hover:shadow-xl focus:shadow-xl focus:outline-none">
-        <div class="icon-wrapper">
+      <!-- Card 2 -->
+      <a href="#" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+        <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
           <i class="fas fa-phone-alt"></i>
         </div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-2">Emergency Contact</h3>
-        <p class="text-gray-600 text-sm">Call help fast — police, fire, medical</p>
+        <h3 class="text-base sm:text-lg font-semibold text-gray-800">Emergency Contact</h3>
       </a>
 
-      <!-- Program -->
-      <a href="#" class="card bg-white p-6 text-center shadow-md hover:shadow-xl focus:shadow-xl focus:outline-none">
-        <div class="icon-wrapper">
-          <i class="fas fa-calendar-check"></i>
+      <!-- Card 3 -->
+      <a href="Programs/S.programs.php" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+        <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
+          <i class="fas fa-calendar-alt"></i>
         </div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-2">Program</h3>
-        <p class="text-gray-600 text-sm">Upcoming events and community programs</p>
+        <h3 class="text-base sm:text-lg font-semibold text-gray-800">Programs</h3>
       </a>
 
-      <!-- Submit Request -->
-      <a href="#" class="card bg-white p-6 text-center shadow-md hover:shadow-xl focus:shadow-xl focus:outline-none">
-        <div class="icon-wrapper">
-          <i class="fas fa-file-invoice"></i>
+      <!-- Card 4 -->
+      <a href="Request_Documents/S.request_documents.php" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+        <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
+          <i class="fas fa-file-signature"></i>
         </div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-2">Submit Request</h3>
-        <p class="text-gray-600 text-sm">Send a request or concern to the office</p>
+        <h3 class="text-base sm:text-lg font-semibold text-gray-800">Request Documents</h3>
       </a>
 
-      <!-- Blotter and Reports -->
-      <a href="#" class="card bg-white p-6 text-center shadow-md hover:shadow-xl focus:shadow-xl focus:outline-none">
-        <div class="icon-wrapper">
-          <i class="fas fa-book"></i>
+      <!-- Card 5 -->
+      <a href="Blotter_Reports/S.blotter_reports.php" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+        <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
+          <i class="fas fa-clipboard-list"></i>
         </div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-2">Blotter & Reports</h3>
-        <p class="text-gray-600 text-sm">View or file official records</p>
+        <h3 class="text-base sm:text-lg font-semibold text-gray-800">Blotter & Reports</h3>
       </a>
 
-      <!-- Community Reports -->
-      <a href="#" class="card bg-white p-6 text-center shadow-md hover:shadow-xl focus:shadow-xl focus:outline-none">
-        <div class="icon-wrapper">
-          <i class="fas fa-comments"></i>
+      <!-- Card 6 -->
+      <a href="Community_Reports/S.community_reports.php" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+        <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
+          <i class="fas fa-users"></i>
         </div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-2">Community Reports</h3>
-        <p class="text-gray-600 text-sm">Share feedback or report issues</p>
-      </a>
-
-      <!-- My Profile -->
-      <a href="#" class="card bg-white p-6 text-center shadow-md hover:shadow-xl focus:shadow-xl focus:outline-none">
-        <div class="icon-wrapper">
-          <i class="fas fa-user-circle"></i>
-        </div>
-        <h3 class="text-xl font-semibold text-gray-800 mb-2">My Profile</h3>
-        <p class="text-gray-600 text-sm">Update your personal information</p>
+        <h3 class="text-base sm:text-lg font-semibold text-gray-800">Community Reports</h3>
       </a>
     </div>
+
+    <!-- Vision, Mission, and History Section -->
+    <section class="bg-white p-6 rounded-xl shadow-md mb-8 max-w-6xl mx-auto">
+      <h2 class="text-2xl font-bold text-green-800 text-center mb-6">Our Vision, Mission & History</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Vision -->
+        <div class="p-5 border border-gray-100 rounded-lg bg-gray-50 hover:shadow-sm transition-shadow duration-200">
+          <h3 class="text-xl font-semibold text-green-700 mb-3 flex items-center">
+            <i class="fas fa-eye mr-2 text-green-600"></i> Vision
+          </h3>
+          <p class="text-gray-600 leading-relaxed">
+            A progressive, united, and empowered community where every resident enjoys peace, prosperity, and quality of life.
+          </p>
+        </div>
+
+        <!-- Mission -->
+        <div class="p-5 border border-gray-100 rounded-lg bg-gray-50 hover:shadow-sm transition-shadow duration-200">
+          <h3 class="text-xl font-semibold text-green-700 mb-3 flex items-center">
+            <i class="fas fa-bullseye mr-2 text-green-600"></i> Mission
+          </h3>
+          <p class="text-gray-600 leading-relaxed">
+            To provide responsive governance, promote sustainable development, and foster active citizen participation for a safer and more inclusive barangay.
+          </p>
+        </div>
+
+        <!-- History -->
+        <div class="p-5 border border-gray-100 rounded-lg bg-gray-50 hover:shadow-sm transition-shadow duration-200">
+          <h3 class="text-xl font-semibold text-green-700 mb-3 flex items-center">
+            <i class="fas fa-book mr-2 text-green-600"></i> History
+          </h3>
+          <p class="text-gray-600 leading-relaxed">
+            Bagbag has a rich history of community resilience and cooperation. From its humble beginnings, it has grown into a vibrant urban barangay committed to service and progress.
+          </p>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- Back to Top Button -->
-  <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="back-to-top hidden md:flex">
-    <i class="fas fa-arrow-up"></i>
-  </button>
-
   <!-- Footer -->
-  <footer class="bg-header text-white text-center py-5 mt-12">
-    <div class="container mx-auto px-4">
-      <p class="text-sm opacity-90">
-        © 2025 Barangay Management System | Designed with care for senior citizens
-      </p>
-      <p class="text-xs mt-1 opacity-75">
-        Simple • Accessible • Trusted
-      </p>
-    </div>
+  <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
+    &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. <br class="sm:hidden"> | Empowering Communities Digitally.
   </footer>
 
-  
+  <!-- Mobile Menu -->
+  <div id="mobileMenu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white w-4/5 max-w-xs rounded-lg shadow-xl p-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4">Navigation</h3>
+      <ul class="space-y-3">
+        <li><a href="#" class="block text-green-700 hover:text-green-900 font-medium">Home</a></li>
+        <li><a href="#" class="block text-green-700 hover:text-green-900 font-medium">Services</a></li>
+        <li><a href="#" class="block text-green-700 hover:text-green-900 font-medium">About</a></li>
+        <li><a href="#" class="block text-green-700 hover:text-green-900 font-medium">Contact</a></li>
+        <li><a href="logout.php" class="block text-green-700 hover:text-green-900 font-medium">Logout</a></li>
+      </ul>
+      <button id="closeMenu" class="mt-4 text-red-500 text-sm">Close</button>
+    </div>
+  </div>
 
-  <!-- Scripts -->
+  <!-- JavaScript -->
   <script>
-    // Update current date
-    const now = new Date();
-    document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // Update time
+    function updateTime() {
+      const now = new Date();
+      const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      };
+      const formattedDate = now.toLocaleString('en-US', options);
+      document.getElementById('datetime').textContent = formattedDate.toUpperCase();
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
 
-    // Slideshow functionality
-    let slideIndex = 1;
-    showSlides(slideIndex);
+    // Slideshow Configuration
+    const slides = [
+      { img: '../images/4-bagbag.png', title: 'Welcome to Bagbag', desc: 'Your official digital gateway to barangay services.' },
+      { img: '../images/BARANGAY-HOTLINE.png', title: 'Community First', desc: 'Empowering residents through digital access.' },
+      { img: '../images/committess.png', title: 'Emergency Ready', desc: 'Quick access to emergency contacts and support.' },
+      { img: '../images/A.jpg', title: 'Barangay Programs', desc: 'Stay updated with upcoming events and initiatives.' },
+      { img: '../images/B.jpg', title: 'Official Services', desc: 'Apply, report, and request online with ease.' },
+    ];
 
-    function moveSlide(n) {
-      showSlides(slideIndex += n);
+    let currentSlide = 0;
+
+    function showSlide(index) {
+      const slide = slides[index];
+      const slideshow = document.getElementById('slideshow');
+      slideshow.style.backgroundImage = `url('${slide.img}')`;
+      document.getElementById('slideTitle').textContent = slide.title;
+      document.getElementById('slideDesc').textContent = slide.desc;
     }
 
-    function currentSlide(n) {
-      showSlides(slideIndex = n);
-    }
-
-    function showSlides(n) {
-      const slides = document.querySelectorAll('.slide');
-      const dots = document.querySelectorAll('.dot');
-
-      if (n > slides.length) { slideIndex = 1; }
-      if (n < 1) { slideIndex = slides.length; }
-
-      slides.forEach(slide => {
-        slide.classList.remove('active');
-        slide.style.zIndex = 0;
-      });
-
-      dots.forEach(dot => dot.classList.remove('active'));
-
-      const currentSlide = slides[slideIndex - 1];
-      currentSlide.classList.add('active');
-      currentSlide.style.zIndex = 1;
-
-      dots[slideIndex - 1].classList.add('active');
-    }
-
-    // Auto-play slideshow
+    // Auto-cycle slides
     setInterval(() => {
-      moveSlide(1);
+      currentSlide = (currentSlide + 1) % slides.length;
+      showSlide(currentSlide);
     }, 5000);
 
-    // Dropdown Menu Toggle
-    const dropdown = document.getElementById('menuDropdown');
-    dropdown.addEventListener('click', function (e) {
-      e.stopPropagation();
-      this.classList.toggle('active');
+    // Initial slide
+    showSlide(currentSlide);
+
+    // Lightbox Functions
+    function openLightbox() {
+      const imgSrc = slides[currentSlide].img;
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightboxImage');
+      lightboxImg.src = imgSrc;
+      lightbox.style.display = 'flex';
+      setTimeout(() => lightbox.classList.add('show'), 10);
+    }
+
+    function closeLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      lightbox.classList.remove('show');
+      setTimeout(() => {
+        lightbox.style.display = 'none';
+      }, 300);
+    }
+
+    // Close with X button
+    document.getElementById('closeLightbox').addEventListener('click', closeLightbox);
+
+    // Close when clicking outside image
+    document.getElementById('lightbox').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeLightbox();
     });
 
-    // Close dropdown when clicking outside
-    window.addEventListener('click', function (e) {
-      if (!dropdown.contains(e.target)) {
-        dropdown.classList.remove('active');
+    // Close with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
+    // User Dropdown Toggle
+    const userMenuButton = document.getElementById('userMenuButton');
+    const userDropdown = document.getElementById('userDropdown');
+
+    userMenuButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+        userDropdown.classList.add('hidden');
       }
     });
   </script>

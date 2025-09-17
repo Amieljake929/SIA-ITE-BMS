@@ -9,10 +9,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 require_once 'generate_reference.php';
 
 // Database connection
-$conn = new mysqli("localhost:3307", "root", "", "ris");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include '../RIS_login/db_connect.php';
+
 $conn->set_charset('utf8mb4');
 
 // Get action and ID

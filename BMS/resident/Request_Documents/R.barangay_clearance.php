@@ -6,19 +6,17 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 }
 
 // Database Connection
-$conn = new mysqli("localhost:3307", "root", "", "bms");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include '../../login/db_connect.php';
+
 
 $user_id = $_SESSION['user_id'];
 
-// Check if there's a pending clearance request
-$stmt = $conn->prepare("SELECT id, status FROM barangay_clearance WHERE user_id = ? AND status = 'Pending' ORDER BY application_date DESC LIMIT 1");
+// Check for any active request (Pending, Validated, or Approved)
+$stmt = $conn->prepare("SELECT id, status FROM barangay_clearance WHERE user_id = ? AND status IN ('Pending', 'Validated', 'Approved') ORDER BY application_date DESC LIMIT 1");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$pending_request = $result->fetch_assoc();
+$active_request = $result->fetch_assoc();
 $stmt->close();
 $conn->close();
 ?>
@@ -32,7 +30,7 @@ $conn->close();
 
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
   <style>
     input:focus, select:focus, textarea:focus {
@@ -55,8 +53,22 @@ $conn->close();
 
   <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
-    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-      <h1 class="text-xl font-bold text-green-800">Barangay Clearance Request</h1>
+
+  <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+        <!-- Home Icon Button and Title -->
+        <div class="flex items-center space-x-4">
+            <!-- Home Icon Button -->
+            <button 
+                class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                onclick="window.location.href='../resident_dashboard.php'"
+                title="Home"
+            >
+                <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
+            </button>
+
+            <h1 class="text-xl font-bold text-green-800">Barangay Clearance Request</h1>
+        </div>
+
 
       <!-- User Info with Dropdown -->
       <div class="relative inline-block text-right">
@@ -65,7 +77,6 @@ $conn->close();
           <span class="text-blue-700 ml-1"><?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
           <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
         </button>
-
         <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-10">
           <ul class="py-2 text-sm">
             <li>
@@ -91,38 +102,71 @@ $conn->close();
       <h2 class="text-2xl font-bold text-green-800 mb-6 text-center">Barangay Clearance Application</h2>
       <p class="text-gray-600 text-center mb-8 text-sm">Please fill out the form completely and truthfully.</p>
 
-      <?php if ($pending_request): ?>
-        <!-- ❌ Pending Request Alert -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
-          <div class="flex">
+      <!-- ✅ If Approved -->
+      <?php if ($active_request && $active_request['status'] === 'Approved'): ?>
+        <div class="bg-green-50 border-l-4 border-green-400 p-6 mb-8 rounded-lg">
+          <div class="flex items-start">
             <div class="flex-shrink-0">
-              <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
+              <i class="fas fa-check-circle text-green-500 text-2xl"></i>
             </div>
-            <div class="ml-3">
-              <p class="text-sm text-yellow-700">
-                You already have a <strong>Pending</strong> clearance request. 
-                Please wait for approval before submitting another one.
+            <div class="ml-4">
+              <h3 class="text-lg font-semibold text-green-800">Barangay Clearance Approved!</h3>
+              <p class="text-green-700 mt-1">Your Barangay Clearance has been <strong>approved</strong>.</p>
+              <p class="text-sm text-green-600 mt-2">
+                <strong>📝 Softcopy:</strong> You can download and print it below.<br>
+                <strong>📬 Hardcopy:</strong> Ready to pick up at the Barangay Office.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center space-y-4">
+          <a href="print_document.php?tab=barangay_clearance&id=<?= $active_request['id'] ?>" target="_blank"
+             class="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition transform hover:scale-105">
+            <i class="fas fa-print mr-2"></i> Print Clearance
+          </a>
+          <div>
+            <a href="../R.submit_request.php" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition">
+              <i class="fas fa-home mr-2"></i> Back
+            </a>
+          </div>
+        </div>
+
+      <!-- ⚠️ If Pending or Validated -->
+      <?php elseif ($active_request && in_array($active_request['status'], ['Pending', 'Validated'])): ?>
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 mb-8 rounded-lg">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-clock text-yellow-500 text-2xl"></i>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-semibold text-yellow-800">Request <?= htmlspecialchars($active_request['status']) ?></h3>
+              <p class="text-yellow-700 mt-1">
+                Your request is currently <strong><?= htmlspecialchars($active_request['status']) ?></strong>.
+              </p>
+              <p class="text-sm text-yellow-600 mt-2">
+                Please wait for final approval. You cannot submit a new request until this is resolved.
               </p>
             </div>
           </div>
         </div>
 
         <div class="text-center">
-          <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg shadow">
-            <i class="fas fa-ban mr-2"></i> Request Already Submitted
+          <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg shadow opacity-70">
+            <i class="fas fa-ban mr-2"></i> Request Already <?= htmlspecialchars($active_request['status']) ?>
           </button>
         </div>
 
         <div class="text-center mt-6">
-  <a href="../R.submit_request.php" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200">
-    <i class="fas fa-home mr-2"></i> Back to Home
-  </a>
-</div>
-        
+          <a href="../R.submit_request.php" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200">
+            <i class="fas fa-home mr-2"></i> Back
+          </a>
+        </div>
 
+      <!-- ✅ No Active Request - Show Form -->
       <?php else: ?>
-        <!-- ✅ Show Form if No Pending Request -->
-        <form action="R.submit_clearance.php" method="POST">
+        <!-- ✅ Show Form if No Pending/Validated/Approved Request -->
+        <form id="clearanceForm" action="R.submit_clearance.php" method="POST">
 
           <!-- Personal Information -->
           <section class="mb-8">
@@ -178,6 +222,11 @@ $conn->close();
                 <input type="text" name="nationality" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
               </div>
             </div>
+            <div>
+  <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+  <input type="email" name="email" id="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+  <p id="emailError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid email address.</p>
+</div>
           </section>
 
           <!-- Address -->
@@ -266,7 +315,6 @@ $conn->close();
             </button>
           </div>
         </form>
-
       <?php endif; ?>
 
     </div>
@@ -274,7 +322,7 @@ $conn->close();
 
   <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
-    &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. <br class="sm:hidden"> | Empowering Communities Digitally.
+    &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. | Empowering Communities Digitally.
   </footer>
 
   <!-- JavaScript -->
@@ -297,17 +345,54 @@ $conn->close();
       if (dateInput) dateInput.value = today;
     });
 
-    const userMenuButton = document.getElementById('userMenuButton');
-    const userDropdown = document.getElementById('userDropdown');
-    userMenuButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userDropdown.classList.toggle('hidden');
-    });
-    document.addEventListener('click', (e) => {
-      if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-        userDropdown.classList.add('hidden');
-      }
-    });
+    // Form validation
+const form = document.getElementById('clearanceForm');
+if (form) {
+  const firstName = document.querySelector('input[name="first_name"]');
+  const middleName = document.querySelector('input[name="middle_name"]');
+  const lastName = document.querySelector('input[name="last_name"]');
+  const signature = document.querySelector('input[name="signature"]');
+  const emailInput = document.getElementById('email'); // ✅ Add this line
+  const emailError = document.getElementById('emailError'); // ✅ Add this line
+
+  form.addEventListener('submit', function(e) {
+    let fullName = `${firstName.value.trim()} ${middleName.value.trim()} ${lastName.value.trim()}`.replace(/\s+/g, ' ').trim();
+    let sigValue = signature.value.trim();
+
+    // ✅ Validate Email Format
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(emailInput.value.trim())) {
+      e.preventDefault();
+      emailInput.classList.add('border-red-500', 'bg-red-50'); // Highlight field
+      emailError.classList.remove('hidden'); // Show error message
+      emailInput.focus();
+      return false;
+    } else {
+      emailInput.classList.remove('border-red-500', 'bg-red-50'); // Reset style
+      emailError.classList.add('hidden'); // Hide error message
+    }
+
+    if (sigValue.toLowerCase() !== fullName.toLowerCase()) {
+      e.preventDefault();
+      alert("❌ Signature does not match your full name.\n\nExpected: " + fullName + "\nYou typed: " + sigValue);
+      signature.focus();
+      return false;
+    }
+
+    if (!confirm("Are you sure you want to submit your Barangay Clearance request?")) {
+      e.preventDefault();
+    }
+  });
+
+  // ✅ Optional: Real-time validation when user types
+  emailInput?.addEventListener('input', function() {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailPattern.test(this.value.trim())) {
+      this.classList.remove('border-red-500', 'bg-red-50');
+      emailError.classList.add('hidden');
+    }
+  });
+}
   </script>
 </body>
 </html>

@@ -21,13 +21,13 @@ function sendReferenceNumber($toEmail, $fullName, $referenceNumber) {
         $mail->Port       = 587;
 
         // Sender (must match Username)
-        $mail->setFrom('barangaybagbagmanagementsystem@gmail.com', 'Barangay Bagbag eServices');
+        $mail->setFrom('barangaybagbagmanagementsystem@gmail.com', 'BagbagCare');
         
         // Recipient
         $mail->addAddress($toEmail, $fullName);
 
         // Optional: Reply-To
-        $mail->addReplyTo('barangaybagbagmanagementsystem@gmail.com', 'Barangay Support');
+        $mail->addReplyTo('barangaybagbagmanagementsystem@gmail.com', 'Bagbag Support');
 
         // Content
         $mail->isHTML(true);
@@ -40,10 +40,10 @@ function sendReferenceNumber($toEmail, $fullName, $referenceNumber) {
                {$referenceNumber}
            </code>
         </p>
-        <p>Use this number to create your online account at the Barangay eServices Portal.</p>
+        <p>Use this number to create your online account at the BagbagCare Portal.</p>
         <br>
         <p>Thank you!</p>
-        <strong>Barangay Bagbag eServices Team</strong>
+        <strong>Barangay BagbagCare Team</strong>
         ";
 
         // Optional: Plain text fallback
@@ -51,7 +51,7 @@ function sendReferenceNumber($toEmail, $fullName, $referenceNumber) {
             . "Your resident registration has been approved.\n"
             . "Your Reference Number: {$referenceNumber}\n\n"
             . "Use this number to register your online account.\n\n"
-            . "Barangay Bagbag eServices Team";
+            . "Barangay BagbagCare Team";
 
         // Send email
         $mail->send();

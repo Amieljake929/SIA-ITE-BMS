@@ -21,10 +21,25 @@ if (isset($_GET['error'])) {
       background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233a9d6a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
     .btn-primary {
-      @apply bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg w-full flex items-center justify-center transition duration-300;
+      background-color: #3a9d6a;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
     }
     .form-input {
-      @apply border border-gray-300 rounded-lg px-4 py-3 w-full text-sm focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-600;
+      border: 1px solid #ced4da;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      width: 100%;
+      transition: border 0.3s ease;
+    }
+    .form-input:focus {
+      border-color: #3a9d6a;
+      box-shadow: 0 0 0 3px rgba(58, 157, 106, 0.2);
+      outline: none;
     }
     .card {
       @apply bg-white rounded-xl shadow-lg overflow-hidden;
@@ -111,9 +126,9 @@ if (isset($_GET['error'])) {
         </div>
 
         <!-- Sign In Button -->
-        <button type="submit" class="btn-primary">
-          <i class="fas fa-sign-in-alt mr-2"></i> Sign In
-        </button>
+        <button type="submit" class="btn-primary w-full py-3 text-base sm:text-lg transition duration-300 flex items-center justify-center">
+            <i class="fas fa-sign-in-alt mr-2"></i> Sign In
+          </button>
       </form>
 
       <!-- Footer -->

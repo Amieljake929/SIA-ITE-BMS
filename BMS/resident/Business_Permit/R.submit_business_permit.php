@@ -6,10 +6,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 }
 
 // Database Connection
-$conn = new mysqli("localhost:3307", "root", "", "bms");
-if ($conn->connect_error) {
-    die(json_encode(['success' => false, 'message' => 'Database connection failed.']));
-}
+include '../../login/db_connect.php';
+
 
 $user_id = $_SESSION['user_id'];
 
@@ -105,6 +103,7 @@ $address = trim($_POST['address'] ?? '');
 $contact_number = trim($_POST['contact_number'] ?? '');
 $business_name = trim($_POST['business_name'] ?? '');
 $business_address = trim($_POST['business_address'] ?? '');
+$email = trim($_POST['email'] ?? '');
 $business_nature = trim($_POST['business_nature'] ?? '');
 $ownership_form = $_POST['ownership_form'] ?? '';
 $registration_number = trim($_POST['registration_number'] ?? '');
@@ -119,7 +118,7 @@ $application_date = $_POST['application_date'] ?? '';
 // Validation
 // -------------------------------
 if (empty($first_name) || empty($last_name) || empty($address) || empty($contact_number) ||
-    empty($business_name) || empty($business_address) || empty($business_nature) ||
+    empty($business_name) || empty($business_address) || empty($email) || empty($business_nature) ||
     empty($ownership_form) || empty($tin) || empty($operation_date) || empty($signature) ||
     empty($application_date)) {
     echo json_encode([
@@ -209,6 +208,7 @@ $stmt = $conn->prepare("
         last_name, 
         address, 
         contact_number,
+        email,
         business_name, 
         business_address, 
         business_nature, 
@@ -224,11 +224,11 @@ $stmt = $conn->prepare("
         cedula, 
         signature, 
         application_date
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 $stmt->bind_param(
-    "iissssssssssssisidsssss",
+    "iisssssssssssssisidsssss",
     $user_id,
     $resident_id,
     $business_permit_id,
@@ -237,6 +237,7 @@ $stmt->bind_param(
     $last_name,
     $address,
     $contact_number,
+    $email,
     $business_name,
     $business_address,
     $business_nature,
@@ -255,11 +256,9 @@ $stmt->bind_param(
 );
 
 if ($stmt->execute()) {
-    echo json_encode([
-        'success' => true,
-        'message' => 'Your business permit application has been submitted successfully!',
-        'redirect_url' => 'R.business_permit.php?permit_submitted=1'
-    ]);
+    // Direct redirect (no JSON needed)
+    header("Location: R.business_permit.php?permit_submitted=1");
+    exit();
 } else {
     error_log("Business Permit Insert Error: " . $stmt->error);
     echo json_encode([

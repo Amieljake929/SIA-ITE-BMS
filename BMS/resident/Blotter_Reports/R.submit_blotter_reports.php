@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 }
 
 // Database connection
-$conn = new mysqli("localhost:3307", "root", "", "bms");
+include '../../login/db_connect.php';
 
 // I-check kung may error sa connection
 if ($conn->connect_error) {

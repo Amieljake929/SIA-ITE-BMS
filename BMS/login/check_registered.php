@@ -11,7 +11,7 @@ if (!$email) {
 }
 
 // Database connection
-$conn = new mysqli("localhost:3307", "root", "", "bms");
+include 'db_connect.php';
 
 // Check connection
 if ($conn->connect_error) {

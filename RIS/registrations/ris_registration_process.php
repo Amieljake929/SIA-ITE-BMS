@@ -2,12 +2,8 @@
 // ris_registration_process.php
 
 // Database connection
-$conn = new mysqli("localhost:3307", "root", "", "ris"); // 👈 Change to your DB name
+include '../RIS_login/db_connect.php';
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
 
 // Set charset
 $conn->set_charset('utf8mb4');

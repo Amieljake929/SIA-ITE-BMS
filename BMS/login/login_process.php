@@ -55,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     case 'resident':
         $redirect_url = '../resident/resident_dashboard.php';
         break;
+    
+
     default:
         echo json_encode([
             'success' => false,

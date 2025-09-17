@@ -6,10 +6,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 }
 
 // Database connection
-$conn = new mysqli("localhost:3307", "root", "", "bms");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include '../login/db_connect.php';
+
 $conn->close();
 ?>
 
@@ -18,7 +16,7 @@ $conn->close();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bagbag eServices - Official Portal</title>
+  <title>BagbagCare - Residents Portal</title>
 
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -117,7 +115,7 @@ $conn->close();
   <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4 relative">
     <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-            <h1 class="text-xl font-bold text-green-800">Barangay Bagbag System</h1>
+            <h1 class="text-xl font-bold text-green-800">BagbagCare | Resident</h1>
       <div class="flex items-center space-x-4"></div>
 
       <!-- User Info with Dropdown -->
@@ -179,7 +177,7 @@ $conn->close();
     <!-- Service Cards Grid -->
     <div class="grid grid-cols-2 gap-5 sm:gap-6 max-w-4xl mx-auto mb-12">
       <!-- Card 1 -->
-      <a href="#" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+      <a href="Official_Committee/R.official_committee.php" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
         <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
           <i class="fas fa-gavel"></i>
         </div>
@@ -195,7 +193,7 @@ $conn->close();
       </a>
 
       <!-- Card 3 -->
-      <a href="#" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+      <a href="Proragms/R_programs.php" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
         <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
           <i class="fas fa-calendar-alt"></i>
         </div>
@@ -219,7 +217,7 @@ $conn->close();
       </a>
 
       <!-- Card 6 -->
-      <a href="#" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+      <a href="Community_Reports/R.community_report.php" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
         <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
           <i class="fas fa-users"></i>
         </div>

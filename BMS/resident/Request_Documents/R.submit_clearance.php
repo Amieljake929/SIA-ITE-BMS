@@ -8,7 +8,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 }
 
 // Database connection
-$conn = new mysqli("localhost:3307", "root", "", "bms");
+include '../../login/db_connect.php';
+
 
 // I-check kung may error sa connection
 if ($conn->connect_error) {
@@ -24,6 +25,7 @@ $age = (int)$_POST['age'];
 $gender = $conn->real_escape_string($_POST['gender']);
 $civil_status = $conn->real_escape_string($_POST['civil_status']);
 $nationality = $conn->real_escape_string($_POST['nationality']);
+$email = $conn->real_escape_string($_POST['email']);
 
 $house_no = $conn->real_escape_string($_POST['house_no']);
 $street = $conn->real_escape_string($_POST['street']);
@@ -59,15 +61,15 @@ $stmt->close();
 $stmt = $conn->prepare("
     INSERT INTO barangay_clearance (
         resident_id, user_id, first_name, middle_name, last_name, dob, age, gender,
-        civil_status, nationality, house_no, street, purok, residency_years,
+        civil_status, nationality, email, house_no, street, purok, residency_years,
         id_type, id_number, contact_number, purpose, signature, application_date
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 $stmt->bind_param(
-    "iisssisssssssissssss",
+    "iissssssssssssissssss",
     $resident_id, $user_id, $first_name, $middle_name, $last_name, $dob, $age, $gender,
-    $civil_status, $nationality, $house_no, $street, $purok, $residency_years,
+    $civil_status, $nationality, $email, $house_no, $street, $purok, $residency_years,
     $id_type, $id_number, $contact_number, $purpose, $signature, $application_date
 );
 

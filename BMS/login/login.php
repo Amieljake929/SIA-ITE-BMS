@@ -11,7 +11,7 @@ if (isset($_GET['error'])) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Barangay Resident Login</title>
+  <title>Resident Login | Barangay Bagbag</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -71,6 +71,22 @@ if (isset($_GET['error'])) {
       text-decoration: underline;
       color: #2d7c4a;
     }
+    .badge-resident {
+      background: linear-gradient(to right, #d1f0e1, #e8f5e8);
+      border: 1px solid #3a9d6a;
+      color: #1f7042;
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+    }
+    .illustration {
+      max-width: 200px;
+      margin: 0 auto;
+      opacity: 0.9;
+    }
     @media (max-width: 1024px) {
       .lg\:flex {
         flex-direction: column;
@@ -79,17 +95,12 @@ if (isset($_GET['error'])) {
         width: 100%;
       }
     }
-
-    /* Modal Styles */
-    #successModal {
-      display: none;
-      position: fixed;
-      z-index: 50;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.5);
-      backdrop-filter: blur(4px);
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 0.6s ease-out;
     }
     .loader {
       border-top-color: #3a9d6a;
@@ -104,27 +115,36 @@ if (isset($_GET['error'])) {
 <body class="font-sans min-h-screen flex items-center justify-center px-4 py-10 sm:py-12">
 
   <!-- Back to Home Link -->
-  <a href="#" class="absolute top-4 left-4 text-green-700 hover:text-green-900 text-sm flex items-center z-10">
+  <a href="website2.php" class="absolute top-4 left-4 text-green-700 hover:text-green-900 text-sm flex items-center z-10">
     <i class="fas fa-arrow-left mr-1"></i> Back to Website
   </a>
 
   <!-- Login Card -->
-  <div class="card w-full max-w-4xl mx-auto overflow-hidden bg-white">
+  <div class="card w-full max-w-4xl mx-auto overflow-hidden bg-white fade-in">
     <div class="flex flex-col lg:flex-row">
 
-      <!-- Left Side: Branding -->
-      <div class="lg:w-1/2 p-8 md:p-10 bg-gradient-to-br from-green-50 to-yellow-50 flex flex-col justify-center">
+      <!-- Left Side: Branding with Resident Badge -->
+      <div class="lg:w-1/2 p-8 md:p-10 bg-gradient-to-br from-green-50 to-emerald-50 flex flex-col justify-center">
         <div class="icon-circle mb-5">
           <img src="../images/Bagbag.png" alt="Barangay Logo" class="w-12 h-12">
         </div>
+        <span class="badge-resident mb-4 justify-center">
+          <i class="fas fa-user-shield mr-1.5"></i> For Residents Only
+        </span>
         <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4 text-center">
           Welcome to Barangay Bagbag Services
         </h2>
         <p class="text-gray-600 text-center leading-relaxed text-sm sm:text-base">
           Access community programs, submit requests, and stay connected with your barangay — all in one place.
         </p>
-        <div class="mt-8 text-center opacity-10">
-          <i class="fas fa-shield-alt text-6xl text-green-600"></i>
+
+        <!-- Resident Illustration -->
+        <div class="illustration mt-8 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3a9d6a" stroke-width="1.5" class="w-full h-auto">
+            <circle cx="12" cy="8" r="5"/>
+            <path d="M12 13a8 8 0 0 0 8 8h-16a8 8 0 0 0 8-8z"/>
+            <path d="M8 21v-3a4 4 0 0 1 8 0v3"/>
+          </svg>
         </div>
       </div>
 
@@ -132,10 +152,10 @@ if (isset($_GET['error'])) {
       <div class="lg:w-1/2 p-8 md:p-10 flex flex-col justify-center">
         <div class="text-center mb-6">
           <div class="icon-circle mx-auto mb-4" style="width: 50px; height: 50px;">
-            <img src="../images/Bagbag.png" alt="Barangay Logo" class="w-8 h-8">
+            <i class="fas fa-sign-in-alt text-green-700"></i>
           </div>
-          <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Sign In to Your Resident Account</h1>
-          <p class="text-gray-600 text-xs sm:text-sm mt-2">Please enter your credentials to continue</p>
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Resident Sign In</h1>
+          <p class="text-gray-600 text-xs sm:text-sm mt-2">Secure access to your personal account</p>
         </div>
 
         <!-- Error Container (AJAX) -->
@@ -197,22 +217,22 @@ if (isset($_GET['error'])) {
           <p class="text-gray-600 text-sm">
             Don’t have an account?
             <a href="register.php" class="link font-medium hover:underline">
-              <i class="fas fa-user-plus mr-1"></i> Create one here
+              <i class="fas fa-user-plus mr-1"></i> Register Now
             </a>
           </p>
         </div>
 
         <!-- Footer Note -->
         <div class="text-center mt-8 text-xs text-gray-500">
-          <p>Secure login • Encrypted connection</p>
+          <p>🔒 Secure login • Encrypted connection</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Success Modal -->
-  <div id="successModal" aria-hidden="true" role="dialog" aria-modal="true" tabindex="-1">
-    <div class="flex items-center justify-center min-h-screen">
+  <div id="successModal" aria-hidden="true" role="dialog" aria-modal="true" tabindex="-1" class="hidden">
+    <div class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
       <div class="bg-white rounded-lg shadow-lg p-8 max-w-sm text-center mx-4">
         <svg class="mx-auto mb-4 w-16 h-16 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -254,7 +274,7 @@ if (isset($_GET['error'])) {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          successModal.style.display = 'block';
+          successModal.classList.remove('hidden');
           setTimeout(() => {
             window.location.href = data.redirect_url;
           }, 2500);

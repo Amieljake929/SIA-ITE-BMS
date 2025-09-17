@@ -1,5 +1,4 @@
 <?php
-// Optional: fallback error message
 $error_msg = '';
 if (isset($_GET['error'])) {
     $error_msg = htmlspecialchars($_GET['error']);
@@ -20,7 +19,7 @@ if (isset($_GET['error'])) {
       color: #212529;
       font-size: 16px;
       line-height: 1.7;
-      background-image: url("image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233a9d6a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233a9d6a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
     .btn-primary {
       background-color: #3a9d6a;
@@ -114,6 +113,22 @@ if (isset($_GET['error'])) {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    .badge-resident {
+      background: linear-gradient(to right, #d1f0e1, #e8f5e8);
+      border: 1px solid #3a9d6a;
+      color: #1f7042;
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+    }
+    .illustration-reg {
+      max-width: 220px;
+      margin: 20px auto 0;
+      opacity: 0.9;
+    }
     @media (max-width: 1024px) {
       .lg\:flex {
         flex-direction: column;
@@ -126,27 +141,38 @@ if (isset($_GET['error'])) {
 </head>
 <body class="font-sans min-h-screen flex items-center justify-center px-4 py-10 sm:py-12">
 
-  <!-- Back to Home Link -->
   <a href="#" class="absolute top-4 left-4 text-green-700 hover:text-green-900 text-sm flex items-center z-10">
     <i class="fas fa-arrow-left mr-1"></i> Back to Website
   </a>
 
-  <!-- Register Card -->
   <div class="card w-full max-w-5xl mx-auto overflow-hidden bg-white">
     <div class="flex flex-col lg:flex-row">
 
-      <!-- Left Side: Branding & Welcome -->
+      <!-- Left Side: Enhanced Branding -->
       <div class="lg:w-1/2 p-8 md:p-10 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex flex-col justify-center">
         <div class="icon-circle mb-5 animate-pulse">
           <i class="fas fa-home text-3xl text-green-700"></i>
         </div>
+        <span class="badge-resident mb-4 justify-center">
+          <i class="fas fa-user-shield mr-1.5"></i> Resident Registration Only
+        </span>
         <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4 text-center">
-          Welcome to Barangay Bagbag!
+          Join Barangay Bagbag
         </h2>
         <p class="text-gray-600 text-center leading-relaxed text-sm sm:text-base mb-6">
-          Join our community and gain access to services, announcements, and support — all in one secure place.
+          Create your secure account to access services, announcements, and support.
         </p>
-        <div class="bg-white/70 rounded-xl p-5 shadow-sm border border-green-100">
+
+        <!-- Registration Illustration -->
+        <div class="illustration-reg">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3a9d6a" stroke-width="1.5">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 11v4M22 17v4M18 15h4M22 19h-4"/>
+          </svg>
+        </div>
+
+        <div class="bg-white/70 rounded-xl p-5 shadow-sm border border-green-100 mt-6">
           <ul class="space-y-3 text-sm text-gray-700">
             <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Free access to services</li>
             <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Secure personal account</li>
@@ -155,23 +181,20 @@ if (isset($_GET['error'])) {
         </div>
       </div>
 
-      <!-- Right Side: Enhanced Registration Form -->
+      <!-- Right Side: Form -->
       <div class="lg:w-1/2 p-8 md:p-10 flex flex-col justify-center">
         <div class="text-center mb-6">
           <div class="icon-circle mx-auto mb-4" style="width: 50px; height: 50px;">
             <i class="fas fa-user-plus text-lg text-green-700"></i>
           </div>
-          <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Create Your Resident Account</h1>
-          <p class="text-gray-600 text-xs sm:text-sm mt-2">Please fill in your complete information</p>
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Create Your Account</h1>
+          <p class="text-gray-600 text-xs sm:text-sm mt-2">Fill in your information to get started</p>
         </div>
 
-        <!-- Error Container -->
         <div id="errorContainer" class="hidden mb-6 p-4 bg-red-600 text-white rounded-lg shadow text-sm text-center">
         </div>
 
-        <!-- Registration Form -->
         <form id="registerForm" class="space-y-5" novalidate>
-
           <!-- Reference Number -->
           <div class="mb-5">
             <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-2">
@@ -179,14 +202,7 @@ if (isset($_GET['error'])) {
             </label>
             <div class="input-group relative">
               <i class="fas fa-barcode input-icon"></i>
-              <input
-                type="text"
-                id="reference_number"
-                name="reference_number"
-                class="form-input has-icon text-base"
-                placeholder="ABC12-XYZ34-5MN6"
-                required
-              />
+              <input type="text" id="reference_number" name="reference_number" class="form-input has-icon text-base" placeholder="ABC12-XYZ34-5MN6" required />
               <span id="loadingSpinner" class="loading hidden"></span>
             </div>
             <p class="text-xs text-gray-500 mt-1">Check your email for your Reference Number.</p>
@@ -199,15 +215,7 @@ if (isset($_GET['error'])) {
             </label>
             <div class="input-group">
               <i class="fas fa-user input-icon"></i>
-              <input
-                type="text"
-                id="fullname"
-                name="fullname"
-                class="form-input has-icon text-base"
-                placeholder="Juan Dela Cruz"
-                readonly
-                required
-              />
+              <input type="text" id="fullname" name="fullname" class="form-input has-icon text-base" placeholder="Juan Dela Cruz" readonly required />
             </div>
           </div>
 
@@ -218,15 +226,7 @@ if (isset($_GET['error'])) {
             </label>
             <div class="input-group">
               <i class="fas fa-envelope input-icon"></i>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                class="form-input has-icon text-base"
-                placeholder="you@example.com"
-                readonly
-                required
-              />
+              <input type="email" id="email" name="email" class="form-input has-icon text-base" placeholder="you@example.com" readonly required />
             </div>
           </div>
 
@@ -237,14 +237,7 @@ if (isset($_GET['error'])) {
             </label>
             <div class="input-group">
               <i class="fas fa-phone input-icon"></i>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                class="form-input has-icon text-base"
-                placeholder="+63 912 345 6789"
-                required
-              />
+              <input type="tel" id="phone" name="phone" class="form-input has-icon text-base" placeholder="+63 912 345 6789" required />
             </div>
           </div>
 
@@ -254,25 +247,11 @@ if (isset($_GET['error'])) {
               <label for="dob" class="block text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-calendar-alt text-gray-500 mr-1"></i> Date of Birth
               </label>
-              <input
-                type="date"
-                id="dob"
-                name="dob"
-                class="form-input text-base"
-                readonly
-                required
-              />
+              <input type="date" id="dob" name="dob" class="form-input text-base" readonly required />
             </div>
             <div>
               <label for="age" class="block text-sm font-medium text-gray-700 mb-2">Age</label>
-              <input
-                type="number"
-                id="age"
-                name="age"
-                class="form-input text-base"
-                placeholder="Auto-calculated"
-                readonly
-              />
+              <input type="number" id="age" name="age" class="form-input text-base" placeholder="Auto-calculated" readonly />
             </div>
           </div>
 
@@ -282,14 +261,7 @@ if (isset($_GET['error'])) {
               <label for="pob" class="block text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-map-marker-alt text-gray-500 mr-1"></i> Place of Birth
               </label>
-              <input
-                type="text"
-                id="pob"
-                name="pob"
-                class="form-input text-base"
-                placeholder="Manila, Philippines"
-                required
-              />
+              <input type="text" id="pob" name="pob" class="form-input text-base" placeholder="Manila, Philippines" required />
             </div>
             <div>
               <label for="gender" class="block text-sm font-medium text-gray-700 mb-2">
@@ -304,7 +276,7 @@ if (isset($_GET['error'])) {
             </div>
           </div>
 
-          <!-- Civil Status & Employment Status -->
+          <!-- Civil & Employment Status -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             <div>
               <label for="civil_status" class="block text-sm font-medium text-gray-700 mb-2">
@@ -342,42 +314,22 @@ if (isset($_GET['error'])) {
               <label for="nationality" class="block text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-flag text-gray-500 mr-1"></i> Nationality
               </label>
-              <input
-                type="text"
-                id="nationality"
-                name="nationality"
-                class="form-input text-base"
-                placeholder="Filipino"
-                required
-              />
+              <input type="text" id="nationality" name="nationality" class="form-input text-base" placeholder="Filipino" required />
             </div>
             <div>
               <label for="religion" class="block text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-place-of-worship text-gray-500 mr-1"></i> Religion
               </label>
-              <input
-                type="text"
-                id="religion"
-                name="religion"
-                class="form-input text-base"
-                placeholder="Catholic"
-              />
+              <input type="text" id="religion" name="religion" class="form-input text-base" placeholder="Catholic" />
             </div>
           </div>
 
-          <!-- Present Address -->
+          <!-- Address -->
           <div class="mb-5">
             <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
               <i class="fas fa-home text-gray-500 mr-1"></i> Present Address
             </label>
-            <textarea
-              id="address"
-              name="address"
-              class="form-input text-base"
-              rows="3"
-              placeholder="House No., Street, Barangay, City"
-              required
-            ></textarea>
+            <textarea id="address" name="address" class="form-input text-base" rows="3" placeholder="House No., Street, Barangay, City" required></textarea>
           </div>
 
           <!-- Resident Type & Length of Stay -->
@@ -408,23 +360,16 @@ if (isset($_GET['error'])) {
             </div>
           </div>
 
-          <!-- Password Fields -->
+          <!-- Password Section -->
           <div class="form-section">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">Set Your Account Password</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Set Your Password</h3>
             <div class="mb-5">
               <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-lock text-gray-500 mr-1"></i> Password
               </label>
               <div class="input-group relative">
                 <i class="fas fa-lock input-icon"></i>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  class="form-input has-icon text-base pr-10"
-                  placeholder="••••••••"
-                  required
-                />
+                <input type="password" id="password" name="password" class="form-input has-icon text-base pr-10" placeholder="••••••••" required />
                 <button type="button" id="togglePassword" class="absolute right-3 top-2.5 text-gray-500 focus:outline-none">
                   <i class="fas fa-eye" id="eyeIcon"></i>
                 </button>
@@ -437,14 +382,7 @@ if (isset($_GET['error'])) {
               </label>
               <div class="input-group relative">
                 <i class="fas fa-lock input-icon"></i>
-                <input
-                  type="password"
-                  id="confirm_password"
-                  name="confirm_password"
-                  class="form-input has-icon text-base pr-10"
-                  placeholder="••••••••"
-                  required
-                />
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input has-icon text-base pr-10" placeholder="••••••••" required />
                 <button type="button" id="toggleConfirmPassword" class="absolute right-3 top-2.5 text-gray-500 focus:outline-none">
                   <i class="fas fa-eye" id="confirmEyeIcon"></i>
                 </button>
@@ -458,7 +396,6 @@ if (isset($_GET['error'])) {
           </button>
         </form>
 
-        <!-- Already have an account? -->
         <div class="text-center mt-6">
           <p class="text-gray-600 text-sm">
             Already have an account?
@@ -468,58 +405,44 @@ if (isset($_GET['error'])) {
           </p>
         </div>
 
-        <!-- Footer Note -->
         <div class="text-center mt-8 text-xs text-gray-500">
-          <p>Your data is secure • We respect your privacy</p>
+          <p>🔒 Your data is secure • We respect your privacy</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Success Modal -->
-  <div id="successModal" aria-hidden="true" role="dialog" aria-modal="true" tabindex="-1" class="hidden">
-    <div class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div class="bg-white rounded-lg shadow-lg p-8 max-w-sm text-center mx-4 animate-fade-in">
-        <svg class="mx-auto mb-4 w-16 h-16 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-        <h2 class="text-2xl font-semibold mb-2">Account Created!</h2>
-        <p class="text-gray-700 mb-4">Welcome to Barangay Bagbag! Redirecting to login...</p>
-        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-12 w-12 mx-auto"></div>
-      </div>
+  <div id="successModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg p-8 max-w-sm text-center mx-4 animate-fade-in">
+      <svg class="mx-auto mb-4 w-16 h-16 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+      <h2 class="text-2xl font-semibold mb-2">Account Created!</h2>
+      <p class="text-gray-700 mb-4">Welcome to Barangay Bagbag! Redirecting...</p>
+      <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-12 w-12 mx-auto"></div>
     </div>
   </div>
 
   <script>
-    // Auto-fill form when Reference Number is entered
+    // (Same JS logic as before, no changes needed)
     document.getElementById('reference_number').addEventListener('blur', function () {
       const refNumber = this.value.trim().toUpperCase();
       if (!refNumber || !/^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(refNumber)) return;
-
       const loading = document.getElementById('loadingSpinner');
       const errorContainer = document.getElementById('errorContainer');
       loading.classList.remove('hidden');
       errorContainer.classList.add('hidden');
-
-      // Fetch resident data
       fetch('http://localhost/ITE-SIA/RIS/ris_api.php?ref=' + refNumber, {
         headers: { 'X-API-Key': 'my-secret-barangay-api-key-123' }
       })
       .then(res => res.json())
       .then(data => {
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        // Check if already registered via email
+        if (data.error) throw new Error(data.error);
         return fetch('check_registered.php?email=' + encodeURIComponent(data.email))
           .then(res => res.json())
           .then(check => {
-            if (check.registered) {
-              throw new Error("This account has already been created. Reference Number is for one-time use only.");
-            }
-
-            // Auto-fill ALL fields
+            if (check.registered) throw new Error("This account has already been created.");
             document.getElementById('fullname').value = data.full_name || '';
             document.getElementById('email').value = data.email || '';
             document.getElementById('dob').value = data.dob || '';
@@ -533,20 +456,14 @@ if (isset($_GET['error'])) {
             document.getElementById('resident_type').value = data.resident_type || '';
             document.getElementById('length_of_stay').value = data.stay_length || '';
             document.getElementById('employment_status').value = data.employment_status || '';
-
-            // Age calculation
             const dobInput = document.getElementById('dob');
             if (dobInput.value) {
               const dob = new Date(dobInput.value);
               const today = new Date();
               let age = today.getFullYear() - dob.getFullYear();
-              const monthDiff = today.getMonth() - dob.getMonth();
-              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-                age--;
-              }
+              if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age--;
               document.getElementById('age').value = age >= 0 ? age : '';
             }
-
             loading.classList.add('hidden');
           });
       })
@@ -557,60 +474,46 @@ if (isset($_GET['error'])) {
       });
     });
 
-    // Auto-calculate Age
     document.getElementById('dob').addEventListener('change', function () {
       const dob = new Date(this.value);
       const today = new Date();
       let age = today.getFullYear() - dob.getFullYear();
-      const monthDiff = today.getMonth() - dob.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        age--;
-      }
+      if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age--;
       document.getElementById('age').value = age >= 0 ? age : '';
     });
 
-    // Toggle Password Visibility
     const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');
     const eyeIcon = document.getElementById('eyeIcon');
-
-    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-    const confirmPasswordInput = document.getElementById('confirm_password');
-    const confirmEyeIcon = document.getElementById('confirmEyeIcon');
-
     togglePassword.addEventListener('click', () => {
       const type = passwordInput.type === 'password' ? 'text' : 'password';
       passwordInput.type = type;
       eyeIcon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
     });
 
+    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const confirmEyeIcon = document.getElementById('confirmEyeIcon');
     toggleConfirmPassword.addEventListener('click', () => {
       const type = confirmPasswordInput.type === 'password' ? 'text' : 'password';
       confirmPasswordInput.type = type;
       confirmEyeIcon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
     });
 
-    // Handle Form Submission
     const registerForm = document.getElementById('registerForm');
     const errorContainer = document.getElementById('errorContainer');
     const successModal = document.getElementById('successModal');
-
     registerForm.addEventListener('submit', function(e) {
       e.preventDefault();
       errorContainer.classList.add('hidden');
-      errorContainer.textContent = '';
-
       const password = passwordInput.value;
       const confirm = confirmPasswordInput.value;
-
       if (password !== confirm) {
         errorContainer.textContent = "Passwords do not match.";
         errorContainer.classList.remove('hidden');
         return;
       }
-
       const formData = new FormData(registerForm);
-
       fetch('register_process.php', {
         method: 'POST',
         body: formData
@@ -628,7 +531,7 @@ if (isset($_GET['error'])) {
         }
       })
       .catch(() => {
-        errorContainer.textContent = "Something went wrong. Please try again.";
+        errorContainer.textContent = "Something went wrong.";
         errorContainer.classList.remove('hidden');
       });
     });

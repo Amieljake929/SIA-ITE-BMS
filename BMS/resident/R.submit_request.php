@@ -31,8 +31,23 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 
   <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4 relative">
-    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+
+  <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+        <!-- Home Icon Button and Title -->
+        <div class="flex items-center space-x-4">
+            <!-- Home Icon Button -->
+            <button 
+                class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                onclick="window.location.href='resident_dashboard.php'"
+                title="Home"
+            >
+                <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
+            </button>
+
             <h1 class="text-xl font-bold text-green-800">Request Documents</h1>
+        </div>
+
+  
       <div class="flex items-center space-x-4"></div>
 
       <!-- User Info with Dropdown -->
@@ -75,11 +90,11 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
         $services = [
           ["label" => "Barangay Clearance", "icon" => "fas fa-certificate", "link" => "Request_Documents/R.barangay_clearance.php"],
           ["label" => "Business Permit", "icon" => "fas fa-briefcase", "link" => "Business_Permit/R.business_permit.php"],
-          ["label" => "Certificate of Residency", "icon" => "fas fa-home", "link" => "#"],
-          ["label" => "Certificate of Indigency", "icon" => "fas fa-hand-holding-heart", "link" => "#"],
-          ["label" => "Cedula", "icon" => "fas fa-id-card", "link" => "#"],
-          ["label" => "Solo Parent Certificate", "icon" => "fas fa-user-friends", "link" => "#"],
-          ["label" => "First Time Job Seeker", "icon" => "fas fa-user-graduate", "link" => "#"],
+          ["label" => "Certificate of Residency", "icon" => "fas fa-home", "link" => "Residency/R.residency.php"],
+          ["label" => "Certificate of Indigency", "icon" => "fas fa-hand-holding-heart", "link" => "Indigency/R.indigency.php"],
+          ["label" => "Cedula", "icon" => "fas fa-id-card", "link" => "Cedula/R.cedula.php"],
+          ["label" => "Solo Parent Certificate", "icon" => "fas fa-user-friends", "link" => "Solo_Parents/R.solo_parent_certificate.php"],
+          ["label" => "First Time Job Seeker", "icon" => "fas fa-user-graduate", "link" => "First_Time_Job_Seeker/R.first_time_job.php"],
         ];
 
         foreach ($services as $service):

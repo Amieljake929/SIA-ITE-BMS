@@ -1,0 +1,3 @@
+[17-Sep-2025 13:32:02 Europe/Berlin] LOGIN_PROCESS FATAL: Can't create table `bms`.`resident_mfa` (errno: 150 "Foreign key constraint is incorrectly formed")
+[17-Sep-2025 13:35:07 Europe/Berlin] LOGIN_PROCESS FATAL: Can't create table `bms`.`resident_mfa` (errno: 150 "Foreign key constraint is incorrectly formed")
+[17-Sep-2025 13:35:26 Europe/Berlin] LOGIN_PROCESS FATAL: Can't create table `bms`.`resident_mfa` (errno: 150 "Foreign key constraint is incorrectly formed")

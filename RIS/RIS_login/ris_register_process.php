@@ -1,9 +1,7 @@
 <?php
 // Database connection
-$conn = new mysqli("localhost:3307", "root", "", "ris");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include 'db_connect.php';
+
 
 // Get latest ID
 $result = $conn->query("SELECT MAX(id) AS max_id FROM users");

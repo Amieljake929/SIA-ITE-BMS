@@ -6,10 +6,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 }
 
 // Database Connection
-$conn = new mysqli("localhost:3307", "root", "", "bms");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include '../../login/db_connect.php';
+
 
 $user_id = $_SESSION['user_id'];
 
@@ -27,12 +25,19 @@ if (!$resident) {
 $resident_id = $resident['id'];
 $stmt->close();
 
-// Now check for pending blotter reports using the correct resident_id
-$stmt = $conn->prepare("SELECT id, status FROM blotter_and_reports WHERE resident_id = ? AND status = 'Pending' ORDER BY report_date DESC LIMIT 1");
+// ✅ CHECK: Any active report (not Completed yet)
+$stmt = $conn->prepare("
+    SELECT id, status 
+    FROM blotter_and_reports 
+    WHERE resident_id = ? 
+      AND status != 'Completed' 
+    ORDER BY created_at DESC 
+    LIMIT 1
+");
 $stmt->bind_param("i", $resident_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$pending_report = $result->fetch_assoc();
+$active_report = $result->fetch_assoc();
 $stmt->close();
 $conn->close();
 ?>
@@ -87,6 +92,11 @@ $conn->close();
                 <i class="fas fa-user text-green-600 mr-3"></i> Profile
               </a>
             </li>
+             <li>
+              <a href="R.blotter_report_history.php" class="block p-4 bg-white shadow rounded-lg hover:shadow-md transition">
+              <i class="fas fa-history text-green-600 mr-2"></i> View Report History
+              </a>
+            </li>
             <li>
               <a href="../../login/logout.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
                 <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
@@ -105,8 +115,8 @@ $conn->close();
       <h2 class="text-2xl font-bold text-green-800 mb-4 text-center">Blotter Report Form</h2>
       <p class="text-gray-600 text-center mb-8 text-sm">Please provide accurate information. All fields are required unless specified.</p>
 
-      <?php if ($pending_report): ?>
-        <!-- ❌ Alert if Pending Report Exists -->
+      <?php if ($active_report): ?>
+        <!-- ❌ Alert if Active Report Exists -->
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
           <div class="flex">
             <div class="flex-shrink-0">
@@ -114,7 +124,8 @@ $conn->close();
             </div>
             <div class="ml-3">
               <p class="text-sm text-yellow-700">
-                You already have a <strong>Pending</strong> blotter report. 
+                You already have an active blotter report with status: 
+                <strong><?= htmlspecialchars($active_report['status']) ?></strong>. 
                 Please wait for processing before submitting another.
               </p>
             </div>
@@ -123,12 +134,12 @@ $conn->close();
 
         <div class="text-center">
           <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg shadow">
-            <i class="fas fa-ban mr-2"></i> Report Already Pending
+            <i class="fas fa-ban mr-2"></i> Report Still Active
           </button>
         </div>
 
         <div class="text-center mt-6">
-          <a href="../R.submit_request.php" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200">
+          <a href="../resident_dashboard.php" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200">
             <i class="fas fa-home mr-2"></i> Back to Home
           </a>
         </div>
