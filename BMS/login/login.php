@@ -16,6 +16,7 @@ if (isset($_GET['error'])) {
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     body {
+      padding-top: 4rem;
       background-color: #f8f9fa;
       color: #212529;
       font-size: 16px;
@@ -115,9 +116,26 @@ if (isset($_GET['error'])) {
 <body class="font-sans min-h-screen flex items-center justify-center px-4 py-10 sm:py-12">
 
   <!-- Back to Home Link -->
-  <a href="website2.php" class="absolute top-4 left-4 text-green-700 hover:text-green-900 text-sm flex items-center z-10">
-    <i class="fas fa-arrow-left mr-1"></i> Back to Website
-  </a>
+  <!-- Top Navbar -->
+<nav class="fixed top-0 left-0 right-0 bg-[#3a9d6a] shadow-md z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16 items-center">
+      <!-- Logo (on the left) -->
+      <div class="flex-shrink-0 flex items-center justify-center">
+        <img src="../images/Bagbag.png" alt="Barangay Logo" class="w-24 h-24 md:w-32 md:h-32 transform translate-y-20 mb-20">
+                <span class="ml-2 text-white font-medium">BagbagCare - Resident Portal</span>
+
+      </div>
+
+      <!-- Back to Website Link (on the right) -->
+      <div class="flex-shrink-0 ml-auto">
+        <a href="website2.php" class="text-white hover:text-green-100 text-sm font-medium flex items-center">
+          <i class="fas fa-arrow-left mr-2"></i> Back to Website
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
 
   <!-- Login Card -->
   <div class="card w-full max-w-4xl mx-auto overflow-hidden bg-white fade-in">
@@ -200,11 +218,7 @@ if (isset($_GET['error'])) {
           </div>
 
           <!-- Forgot Password -->
-          <div class="flex justify-end mb-6">
-            <a href="forgot_password.php" class="text-sm link hover:underline flex items-center">
-              <i class="fas fa-question-circle mr-1"></i> Forgot password?
-            </a>
-          </div>
+          
 
           <!-- Sign In Button -->
           <button type="submit" class="btn-primary w-full py-3 text-base sm:text-lg transition duration-300 flex items-center justify-center">

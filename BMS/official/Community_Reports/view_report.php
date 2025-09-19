@@ -32,8 +32,63 @@ if ($result->num_rows === 0) {
 $report = $result->fetch_assoc();
 $stmt->close();
 $conn->close();
-?>
 
+/* -------------------- helpers for evidence rendering -------------------- */
+function normalize_media_paths($raw) {
+    // Try JSON array first
+    $arr = json_decode($raw, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($arr)) {
+        return $arr;
+    }
+    // Fallback: comma-separated or single string
+    $raw = trim((string)$raw);
+    if ($raw === '') return [];
+    if (strpos($raw, ',') !== false) {
+        return array_values(array_filter(array_map('trim', explode(',', $raw))));
+    }
+    return [$raw];
+}
+
+function to_web_path($file) {
+    // Absolute Windows path -> keep part starting at 'uploads/'
+    $f = str_replace('\\', '/', $file);
+    if (preg_match('~uploads/.*~', $f, $m)) {
+        $f = $m[0]; // e.g. uploads/reports/xxx.jpg
+    }
+
+    // If already absolute URL or site-root path, return as-is
+    if (preg_match('~^https?://~i', $f) || str_starts_with($f, '/')) {
+        return $f;
+    }
+
+    // If it begins with "uploads/", files are under resident/Community_Reports
+    if (str_starts_with($f, 'uploads/')) {
+        return '../../resident/Community_Reports/' . $f;
+    }
+
+    // Otherwise treat as relative to current dir
+    return $f;
+}
+
+function is_image_ext($ext) {
+    return in_array($ext, ['jpg','jpeg','png','gif','bmp','webp'], true);
+}
+function is_video_ext($ext) {
+    return in_array($ext, ['mp4','webm','ogg','ogv','mov','avi','mkv'], true);
+}
+function video_mime($ext) {
+    $map = [
+        'mp4'  => 'video/mp4',
+        'webm' => 'video/webm',
+        'ogg'  => 'video/ogg',
+        'ogv'  => 'video/ogg',
+        'mov'  => 'video/quicktime',
+        'avi'  => 'video/x-msvideo',
+        'mkv'  => 'video/x-matroska',
+    ];
+    return $map[strtolower($ext)] ?? 'video/mp4';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -58,9 +113,7 @@ $conn->close();
   <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
     <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-        <!-- Home Icon Button and Title -->
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='../official_dashboard.php'"
@@ -68,20 +121,17 @@ $conn->close();
             >
                 <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
             </button>
-
             <h1 class="text-xl font-bold text-green-800">View Community Report # <?= $id ?></h1>
         </div>
-
-      <div class="text-sm text-gray-600">
-        Logged in as: <span class="font-medium text-blue-700"><?= htmlspecialchars($_SESSION['full_name']) ?></span>
-      </div>
+        <div class="text-sm text-gray-600">
+          Logged in as: <span class="font-medium text-blue-700"><?= htmlspecialchars($_SESSION['full_name']) ?></span>
+        </div>
     </div>
   </header>
 
   <!-- Main Content -->
   <main class="flex-grow px-6 py-8">
     <div class="max-w-5xl mx-auto">
-
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         <!-- Incident Details -->
@@ -119,25 +169,46 @@ $conn->close();
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Evidence</label>
                 <?php 
-                  $evidence_files = json_decode($report['evidence_path'], true);
-                  if (is_array($evidence_files) && count($evidence_files) > 0):
+                  $files = normalize_media_paths($report['evidence_path']);
                 ?>
-                  <div class="mt-2 space-y-2">
-                    <?php foreach($evidence_files as $file): ?>
-                      <?php if (pathinfo($file, PATHINFO_EXTENSION) === 'jpg' || pathinfo($file, PATHINFO_EXTENSION) === 'jpeg' || pathinfo($file, PATHINFO_EXTENSION) === 'png' || pathinfo($file, PATHINFO_EXTENSION) === 'gif'): ?>
+                <?php if (!empty($files)): ?>
+                  <div class="mt-2 space-y-4">
+                    <?php foreach ($files as $rawFile): 
+                      $ext = strtolower(pathinfo($rawFile, PATHINFO_EXTENSION));
+                      $web = htmlspecialchars(to_web_path($rawFile));
+                    ?>
+                      <?php if (is_image_ext($ext)): ?>
+  <!-- IMAGE -->
+  <div class="border rounded-lg p-2">
+    <img src="<?= $web ?>" 
+         alt="Evidence Image" 
+         class="max-w-full h-auto max-h-64 rounded cursor-pointer"
+         onclick="openModal('<?= $web ?>')">
+    <div class="text-xs mt-1 text-gray-500 break-all"><?= htmlspecialchars($rawFile) ?></div>
+  </div>
+<?php elseif (is_video_ext($ext)): ?>
+
+                        <!-- VIDEO -->
                         <div class="border rounded-lg p-2">
-                          <img src="<?= htmlspecialchars($file) ?>" alt="Evidence Image" class="max-w-full h-auto max-h-64 rounded">
+                          <video controls preload="metadata" class="max-w-full h-auto max-h-96 rounded">
+                            <source src="<?= $web ?>" type="<?= video_mime($ext) ?>">
+                            Your browser does not support the video tag.
+                          </video>
+                          <div class="text-xs mt-1 text-gray-500 break-all"><?= htmlspecialchars($rawFile) ?></div>
                         </div>
                       <?php else: ?>
+                        <!-- OTHER FILE -->
                         <div class="border rounded-lg p-2 bg-gray-50">
                           <i class="fas fa-file mr-2"></i>
-                          <a href="<?= htmlspecialchars($file) ?>" target="_blank" class="text-blue-600 hover:underline"><?= basename($file) ?></a>
+                          <a href="<?= $web ?>" target="_blank" class="text-blue-600 hover:underline break-all">
+                            <?= basename($rawFile) ?>
+                          </a>
                         </div>
                       <?php endif; ?>
                     <?php endforeach; ?>
                   </div>
                 <?php else: ?>
-                  <p><?= htmlspecialchars($report['evidence_path']) ?></p>
+                  <p class="text-gray-500 italic">No evidence found.</p>
                 <?php endif; ?>
               </div>
             <?php endif; ?>
@@ -153,7 +224,6 @@ $conn->close();
 
         <!-- Sidebar -->
         <div class="space-y-6">
-          <!-- Status -->
           <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Current Status</h3>
             <span class="inline-block px-3 py-1 text-sm font-medium rounded-full 
@@ -166,13 +236,11 @@ $conn->close();
             </span>
           </div>
 
-          <!-- BPSO Info -->
           <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Assigned BPSO</h3>
             <p><?= htmlspecialchars($report['bpso_name'] ?? 'Not Assigned') ?></p>
           </div>
 
-          <!-- Close Report Form -->
           <?php if ($report['status'] === 'For Closing'): ?>
             <form method="GET" action="close_report.php" onsubmit="return confirm('Are you sure you want to close this report? This action cannot be undone.');">
               <input type="hidden" name="id" value="<?= $id ?>">
@@ -193,7 +261,6 @@ $conn->close();
             </div>
           <?php endif; ?>
 
-          <!-- Back -->
           <div>
             <a href="O.community_reports.php" class="w-full inline-block text-center bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition">
               <i class="fas fa-arrow-left mr-2"></i> Back to List
@@ -204,12 +271,10 @@ $conn->close();
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
-    &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. | Empowering Communities Digitally.
+    &copy; <?= date('Y') ?> BagbagCare. All rights reserved. | Empowering Communities Digitally.
   </footer>
 
-  <!-- JavaScript -->
   <script>
     function updateTime() {
       const now = new Date();
@@ -223,5 +288,23 @@ $conn->close();
     setInterval(updateTime, 1000);
     updateTime();
   </script>
+
+  <!-- Image Preview Modal -->
+<div id="imgModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+  <span class="absolute top-5 right-8 text-white text-4xl font-bold cursor-pointer" onclick="closeModal()">&times;</span>
+  <img id="modalImg" src="" class="max-h-[90%] max-w-[90%] rounded shadow-lg">
+</div>
+
+<script>
+function openModal(src) {
+  document.getElementById("imgModal").classList.remove("hidden");
+  document.getElementById("modalImg").src = src;
+}
+function closeModal() {
+  document.getElementById("imgModal").classList.add("hidden");
+}
+</script>
+
+
 </body>
 </html>

@@ -13,7 +13,6 @@ $report_id = (int)$_GET['id'];
 
 include '../../login/db_connect.php';
 
-
 $sql = "SELECT * FROM community_reports WHERE id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $report_id);
@@ -27,8 +26,64 @@ if ($result->num_rows === 0) {
 $report = $result->fetch_assoc();
 $stmt->close();
 $conn->close();
-?>
 
+/* -------------------- helpers for evidence rendering -------------------- */
+function normalize_media_paths($raw) {
+    // Try JSON array first
+    $arr = json_decode($raw, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($arr)) {
+        return $arr;
+    }
+    // Fallback: comma-separated or single string
+    $raw = trim((string)$raw);
+    if ($raw === '') return [];
+    if (strpos($raw, ',') !== false) {
+        return array_values(array_filter(array_map('trim', explode(',', $raw))));
+    }
+    return [$raw];
+}
+
+function to_web_path($file) {
+    // Windows absolute -> keep from 'uploads/' onward
+    $f = str_replace('\\', '/', $file);
+    if (preg_match('~uploads/.*~', $f, $m)) {
+        $f = $m[0]; // ex: uploads/reports/xxx.png
+    }
+
+    // Already URL or absolute site path
+    if (preg_match('~^https?://~i', $f) || str_starts_with($f, '/')) {
+        return $f;
+    }
+
+    // Files live under resident/Community_Reports/uploads relative to this file
+    if (str_starts_with($f, 'uploads/')) {
+        return '../../resident/Community_Reports/' . $f;
+    }
+
+    // Default: return as is
+    return $f;
+}
+
+function is_image_ext($ext) {
+    return in_array(strtolower($ext), ['jpg','jpeg','png','gif','bmp','webp'], true);
+}
+function is_video_ext($ext) {
+    return in_array(strtolower($ext), ['mp4','webm','ogg','ogv','mov','avi','mkv'], true);
+}
+function video_mime($ext) {
+    $map = [
+        'mp4'  => 'video/mp4',
+        'webm' => 'video/webm',
+        'ogg'  => 'video/ogg',
+        'ogv'  => 'video/ogg',
+        'mov'  => 'video/quicktime',
+        'avi'  => 'video/x-msvideo',
+        'mkv'  => 'video/x-matroska',
+    ];
+    $ext = strtolower($ext);
+    return $map[$ext] ?? 'video/mp4';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,7 +106,6 @@ $conn->close();
     <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
         <!-- Home Icon Button and Title -->
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='../staff_dashboard.php'"
@@ -59,10 +113,9 @@ $conn->close();
             >
                 <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
             </button>
-
             <h1 class="text-xl font-bold text-green-800">Community Reports</h1>
         </div>
-
+    </div>
   </header>
 
   <!-- Main Content -->
@@ -109,10 +162,49 @@ $conn->close();
         </div>
       <?php endif; ?>
 
-      <?php if (!empty($report['evidence_path']) && file_exists($report['evidence_path'])): ?>
+      <!-- Evidence -->
+      <?php if (!empty($report['evidence_path'])): ?>
         <div class="border-t pt-4">
-          <p><strong>Evidence:</strong></p>
-          <img src="<?= htmlspecialchars($report['evidence_path']) ?>" alt="Evidence" class="mt-2 max-w-md rounded shadow">
+          <p class="mb-2"><strong>Evidence:</strong></p>
+          <?php $files = normalize_media_paths($report['evidence_path']); ?>
+          <?php if (!empty($files)): ?>
+            <div class="space-y-4">
+              <?php foreach ($files as $rawFile): 
+                $ext = strtolower(pathinfo($rawFile, PATHINFO_EXTENSION));
+                $web = htmlspecialchars(to_web_path($rawFile));
+              ?>
+                <?php if (is_image_ext($ext)): ?>
+                  <!-- IMAGE with click-to-zoom -->
+                  <div class="border rounded-lg p-2">
+                    <img src="<?= $web ?>" 
+                         alt="Evidence Image" 
+                         class="max-w-full h-auto max-h-64 rounded cursor-pointer"
+                         onclick="openModal('<?= $web ?>')">
+                    <div class="text-xs mt-1 text-gray-500 break-all"><?= htmlspecialchars($rawFile) ?></div>
+                  </div>
+                <?php elseif (is_video_ext($ext)): ?>
+                  <!-- VIDEO -->
+                  <div class="border rounded-lg p-2">
+                    <video controls preload="metadata" class="max-w-full h-auto max-h-96 rounded">
+                      <source src="<?= $web ?>" type="<?= video_mime($ext) ?>">
+                      Your browser does not support the video tag.
+                    </video>
+                    <div class="text-xs mt-1 text-gray-500 break-all"><?= htmlspecialchars($rawFile) ?></div>
+                  </div>
+                <?php else: ?>
+                  <!-- OTHER FILE (fallback) -->
+                  <div class="border rounded-lg p-2 bg-gray-50">
+                    <i class="fas fa-file mr-2"></i>
+                    <a href="<?= $web ?>" target="_blank" class="text-blue-600 hover:underline break-all">
+                      <?= basename($rawFile) ?>
+                    </a>
+                  </div>
+                <?php endif; ?>
+              <?php endforeach; ?>
+            </div>
+          <?php else: ?>
+            <p class="text-gray-500 italic">No evidence found.</p>
+          <?php endif; ?>
         </div>
       <?php endif; ?>
 
@@ -126,13 +218,29 @@ $conn->close();
 
   <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-8">
-    &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved.
+    &copy; <?= date('Y') ?> BagbagCare. All rights reserved.
   </footer>
 
+  <!-- Image Preview Modal -->
+  <div id="imgModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+    <span class="absolute top-5 right-8 text-white text-4xl font-bold cursor-pointer" onclick="closeModal()">&times;</span>
+    <img id="modalImg" src="" class="max-h-[90%] max-w-[90%] rounded shadow-lg">
+  </div>
+
   <script>
+    // date/time header
     const now = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     document.getElementById('datetime').textContent = now.toLocaleString('en-US', options).toUpperCase();
+
+    // modal functions for image zoom
+    function openModal(src) {
+      document.getElementById("imgModal").classList.remove("hidden");
+      document.getElementById("modalImg").src = src;
+    }
+    function closeModal() {
+      document.getElementById("imgModal").classList.add("hidden");
+    }
   </script>
 </body>
 </html>

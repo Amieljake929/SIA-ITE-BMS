@@ -18,7 +18,7 @@ $conn->close();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bagbag eServices - Official Portal</title>
+  <title>BagbagCare - Resident Portal</title>
 
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -37,14 +37,29 @@ $conn->close();
       <span id="datetime" class="font-medium tracking-wide">THURSDAY, AUGUST 7, 2025, 11:16:33 AM</span>
     </div>
     <div class="flex-shrink-0">
-      <img src="../images/Bagbag.png" alt="Bagbag Logo" class="h-12 object-contain drop-shadow" />
+      <img src="../../images/Bagbag.png" alt="Bagbag Logo" class="h-12 object-contain drop-shadow" />
     </div>
   </div>
 
   <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4 relative">
-    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-      <div class="flex items-center space-x-4"></div>
+
+  <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+        <!-- Home Icon Button and Title -->
+        <div class="flex items-center space-x-4">
+            <!-- Home Icon Button -->
+            <button 
+                class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                onclick="window.location.href='../resident_dashboard.php'"
+                title="Home"
+            >
+                <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
+            </button>
+
+            <h1 class="text-xl font-bold text-green-800">Official Committee</h1>
+        </div>
+
+    
 
       <!-- User Info with Dropdown -->
       <div class="relative inline-block text-right">

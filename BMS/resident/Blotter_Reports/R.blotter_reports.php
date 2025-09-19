@@ -74,8 +74,23 @@ $conn->close();
 
   <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
-    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-      <h1 class="text-xl font-bold text-green-800">Blotter Report Submission</h1>
+
+
+  <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+        <!-- Home Icon Button and Title -->
+        <div class="flex items-center space-x-4">
+            <!-- Home Icon Button -->
+            <button 
+                class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                onclick="window.location.href='../resident_dashboard.php'"
+                title="Home"
+            >
+                <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
+            </button>
+
+            <h1 class="text-xl font-bold text-green-800">Submit Blotter Report Form</h1>
+        </div>
+
 
       <!-- User Info with Dropdown -->
       <div class="relative inline-block text-right">

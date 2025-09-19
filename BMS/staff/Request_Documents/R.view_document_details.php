@@ -8,7 +8,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Staff') {
 // Database connection
 include '../../login/db_connect.php';
 
-
 // Get parameters
 $tab = $_GET['tab'] ?? '';
 $id = $_GET['id'] ?? 0;
@@ -43,16 +42,68 @@ if ($result->num_rows === 0) {
 $record = $result->fetch_assoc();
 $conn->close();
 
-// Helper: Display value or "N/A"
+/* -------------------- Helpers -------------------- */
+// Display value or "N/A"
 function display($value) {
     return $value ? htmlspecialchars($value) : '<span class="text-gray-500 italic">N/A</span>';
 }
 
-// Helper: Display image if exists
-function showImage($src, $label) {
-    if (!$src) return '<span class="text-gray-500 italic">No image uploaded</span>';
-    return '<img src="../uploads/' . htmlspecialchars($src) . '" alt="' . $label . '" class="w-64 h-auto border rounded shadow-sm mt-2">';
+// Build a web path for an image saved as absolute/relative Windows/Unix path
+function to_web_image_path($src, $tab) {
+    if (!$src) return null;
+    $f = str_replace('\\', '/', (string)$src);
+
+    // If the DB stored a full absolute path, keep from 'resident/...'
+    if (preg_match('~resident/Business_Permit/images/.*~i', $f, $m)) {
+        return '../../' . $m[0]; // from staff/Request_Documents/* to resident/*
+    }
+    if (preg_match('~resident/.+?/uploads/.*~i', $f, $m)) {
+        return '../../' . $m[0];
+    }
+    // If it already starts with uploads/
+    if (str_starts_with($f, 'uploads/')) {
+        return '../' . $f; // ../uploads/*
+    }
+    // If it already starts with resident/
+    if (str_starts_with($f, 'resident/')) {
+        return '../../' . $f;
+    }
+    // Common relative locations
+    if (preg_match('~^images/.*~i', $f)) {
+        // For Business Permit images typically under resident/Business_Permit/images
+        return '../../resident/' . ucfirst(str_replace('_', ' ', $tab)) . '/' . $f; // usually wrong because of spaces
+    }
+    if (preg_match('~Business_Permit/images/.*~i', $f, $m)) {
+        return '../../resident/' . $m[0];
+    }
+
+    // As a safe fallback: try uploads first, otherwise Business_Permit/images
+    if (preg_match('~\.(jpg|jpeg|png|gif|bmp|webp)$~i', $f)) {
+        // if only filename is given, try to guess common buckets
+        if ($tab === 'business_permit') {
+            return '../../resident/Business_Permit/images/' . basename($f);
+        }
+        return '../uploads/' . basename($f);
+    }
+
+    return null;
 }
+
+// Render image (clickable -> zoom modal)
+function showImage($src, $label, $tab) {
+    $web = to_web_image_path($src, $tab);
+    if (!$web) return '<span class="text-gray-500 italic">No image uploaded</span>';
+    $safe = htmlspecialchars($web);
+    $alt  = htmlspecialchars($label);
+    return '<img src="'.$safe.'" alt="'.$alt.'" class="w-64 h-auto border rounded shadow-sm mt-2 cursor-pointer" onclick="openModal(\''.$safe.'\')">';
+}
+
+// Which fields are images?
+$image_fields = [
+    'valid_id_front','valid_id_back','proof_of_address','previous_clearance','cedula',
+    // add likely image columns used by specific tabs:
+    'permit','signature','photo','id_image','document_image','business_logo'
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -78,9 +129,7 @@ function showImage($src, $label) {
   <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
     <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-        <!-- Home Icon Button and Title -->
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='../staff_dashboard.php'"
@@ -88,16 +137,13 @@ function showImage($src, $label) {
             >
                 <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
             </button>
-
             <h1 class="text-xl font-bold text-green-800">Document Requests</h1>
         </div>
 
-
-
-      <a href="S.request_documents.php?tab=<?= htmlspecialchars($tab) ?>"
-         class="text-blue-600 hover:underline text-sm flex items-center">
-        <i class="fas fa-arrow-left mr-1"></i> Back to Requests
-      </a>
+        <a href="S.request_documents.php?tab=<?= htmlspecialchars($tab) ?>"
+           class="text-blue-600 hover:underline text-sm flex items-center">
+          <i class="fas fa-arrow-left mr-1"></i> Back to Requests
+        </a>
     </div>
   </header>
 
@@ -111,11 +157,17 @@ function showImage($src, $label) {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <?php foreach ($record as $key => $value): ?>
           <?php if ($key === 'id' || $key === 'user_id' || $key === 'resident_id') continue; ?>
-          <?php if (in_array($key, ['valid_id_front', 'proof_of_address', 'previous_clearance', 'cedula'])): ?>
+          <?php if (in_array($key, $image_fields, true)): ?>
             <!-- Image fields -->
             <div class="col-span-1 md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1"><?= ucfirst(str_replace('_', ' ', $key)) ?>:</label>
-              <?= showImage($value, $key) ?>
+              <?= showImage($value, $key, $tab) ?>
+              <?php
+                // Optional: show raw path for debugging/trace (small, muted)
+                if ($value) {
+                  echo '<div class="text-xs text-gray-500 mt-1 break-all">'.htmlspecialchars($value).'</div>';
+                }
+              ?>
             </div>
           <?php else: ?>
             <!-- Text fields -->
@@ -133,7 +185,7 @@ function showImage($src, $label) {
            class="bg-yellow-500 text-white px-5 py-2 rounded-md hover:bg-yellow-600 transition flex items-center">
           <i class="fas fa-check-circle mr-2"></i> Validate Request
         </a>
-        <?php if ($record['status'] === 'Approved'): ?>
+        <?php if (($record['status'] ?? '') === 'Approved'): ?>
           <a href="print_document.php?tab=<?= $tab ?>&id=<?= $id ?>" target="_blank"
              class="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700 transition flex items-center">
             <i class="fas fa-print mr-2"></i> Print Document
@@ -152,6 +204,12 @@ function showImage($src, $label) {
     &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. | Empowering Communities Digitally.
   </footer>
 
+  <!-- Image Preview Modal -->
+  <div id="imgModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+    <span class="absolute top-5 right-8 text-white text-4xl font-bold cursor-pointer" onclick="closeModal()">&times;</span>
+    <img id="modalImg" src="" class="max-h-[90%] max-w-[90%] rounded shadow-lg">
+  </div>
+
   <!-- JavaScript -->
   <script>
     function updateTime() {
@@ -162,8 +220,16 @@ function showImage($src, $label) {
       };
       document.getElementById('datetime').textContent = now.toLocaleString('en-US', options).toUpperCase();
     }
-    setInterval(updateTime, 1000);
-    updateTime();
+    setInterval(updateTime, 1000); updateTime();
+
+    // Image zoom modal
+    function openModal(src) {
+      document.getElementById("imgModal").classList.remove("hidden");
+      document.getElementById("modalImg").src = src;
+    }
+    function closeModal() {
+      document.getElementById("imgModal").classList.add("hidden");
+    }
   </script>
 </body>
 </html>

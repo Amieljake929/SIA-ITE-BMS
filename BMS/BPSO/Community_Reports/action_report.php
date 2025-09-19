@@ -51,8 +51,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
         $stmt->close();
     }
 }
-?>
 
+/* -------------------- helpers for evidence rendering -------------------- */
+function normalize_media_paths($raw) {
+    // Try JSON array first
+    $arr = json_decode($raw, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($arr)) {
+        return $arr;
+    }
+    // Fallback: comma-separated or single string
+    $raw = trim((string)$raw);
+    if ($raw === '') return [];
+    if (strpos($raw, ',') !== false) {
+        return array_values(array_filter(array_map('trim', explode(',', $raw))));
+    }
+    return [$raw];
+}
+
+function to_web_path($file) {
+    // Normalize slashes
+    $f = str_replace('\\', '/', $file);
+
+    // If absolute Windows path, keep portion from 'uploads/...'
+    if (preg_match('~uploads/.*~', $f, $m)) {
+        $f = $m[0];
+    }
+
+    // Already http(s) or site-root path
+    if (preg_match('~^https?://~i', $f) || str_starts_with($f, '/')) {
+        return $f;
+    }
+
+    // If begins with uploads/, files are under resident/Community_Reports
+    if (str_starts_with($f, 'uploads/')) {
+        // from BPSO/Community_Reports/* to resident/Community_Reports/uploads/*
+        return '../../resident/Community_Reports/' . $f;
+    }
+
+    // Otherwise treat as-is (relative)
+    return $f;
+}
+
+function is_image_ext($ext) {
+    return in_array(strtolower($ext), ['jpg','jpeg','png','gif','bmp','webp'], true);
+}
+function is_video_ext($ext) {
+    return in_array(strtolower($ext), ['mp4','webm','ogg','ogv','mov','avi','mkv'], true);
+}
+function video_mime($ext) {
+    $map = [
+        'mp4'  => 'video/mp4',
+        'webm' => 'video/webm',
+        'ogg'  => 'video/ogg',
+        'ogv'  => 'video/ogg',
+        'mov'  => 'video/quicktime',
+        'avi'  => 'video/x-msvideo',
+        'mkv'  => 'video/x-matroska',
+    ];
+    return $map[strtolower($ext)] ?? 'video/mp4';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,9 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
+    body { font-family: 'Inter', sans-serif; }
     .status-assigned { @apply bg-blue-100 text-blue-800; }
     .status-for-closing { @apply bg-purple-100 text-purple-800; }
     .status-completed { @apply bg-green-100 text-green-800; }
@@ -91,7 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
     <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
         <!-- Home Icon Button and Title -->
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='../BPSO_dashboard.php'"
@@ -102,7 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
 
             <h1 class="text-xl font-bold text-green-800">Community Report - BPSO #<?= $report_id ?></h1>
         </div>
-
 
       <!-- User Info -->
       <div class="text-sm text-gray-600">
@@ -171,25 +225,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Evidence</label>
                   <?php 
-                    $evidence_files = json_decode($report['evidence_path'], true);
-                    if (is_array($evidence_files) && count($evidence_files) > 0):
+                    $evidence_files = normalize_media_paths($report['evidence_path']);
                   ?>
-                    <div class="mt-2 space-y-2">
-                      <?php foreach($evidence_files as $file): ?>
-                        <?php if (pathinfo($file, PATHINFO_EXTENSION) === 'jpg' || pathinfo($file, PATHINFO_EXTENSION) === 'jpeg' || pathinfo($file, PATHINFO_EXTENSION) === 'png' || pathinfo($file, PATHINFO_EXTENSION) === 'gif'): ?>
+                  <?php if (!empty($evidence_files)): ?>
+                    <div class="mt-2 space-y-4">
+                      <?php foreach($evidence_files as $file): 
+                        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                        $src = htmlspecialchars(to_web_path($file));
+                      ?>
+                        <?php if (is_image_ext($ext)): ?>
+                          <!-- IMAGE with zoom -->
                           <div class="border rounded-lg p-2">
-                            <img src="<?= htmlspecialchars($file) ?>" alt="Evidence Image" class="max-w-full h-auto max-h-64 rounded">
+                            <img src="<?= $src ?>" alt="Evidence Image" class="max-w-full h-auto max-h-64 rounded cursor-pointer" onclick="openModal('<?= $src ?>')">
+                          </div>
+                        <?php elseif (is_video_ext($ext)): ?>
+                          <!-- VIDEO -->
+                          <div class="border rounded-lg p-2">
+                            <video controls class="max-w-full h-auto max-h-96 rounded">
+                              <source src="<?= $src ?>" type="<?= video_mime($ext) ?>">
+                              Your browser does not support the video tag.
+                            </video>
                           </div>
                         <?php else: ?>
+                          <!-- OTHER FILE (fallback link) -->
                           <div class="border rounded-lg p-2 bg-gray-50">
                             <i class="fas fa-file mr-2"></i>
-                            <a href="<?= htmlspecialchars($file) ?>" target="_blank" class="text-blue-600 hover:underline"><?= basename($file) ?></a>
+                            <a href="<?= $src ?>" target="_blank" class="text-blue-600 hover:underline">
+                              <?= htmlspecialchars(basename($file)) ?>
+                            </a>
                           </div>
                         <?php endif; ?>
                       <?php endforeach; ?>
                     </div>
                   <?php else: ?>
-                    <p><?= htmlspecialchars($report['evidence_path']) ?></p>
+                    <p class="text-gray-500 italic"><?= htmlspecialchars($report['evidence_path']) ?></p>
                   <?php endif; ?>
                 </div>
               <?php endif; ?>
@@ -249,8 +318,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
 
   <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
-    &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. <br class="sm:hidden"> | Empowering Communities Digitally.
+    &copy; <?= date('Y') ?> BagbagCare. All rights reserved. <br class="sm:hidden"> | Empowering Communities Digitally.
   </footer>
+
+  <!-- Image Preview Modal -->
+  <div id="imgModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+    <span class="absolute top-5 right-8 text-white text-4xl font-bold cursor-pointer" onclick="closeModal()">&times;</span>
+    <img id="modalImg" src="" class="max-h-[90%] max-w-[90%] rounded shadow-lg">
+  </div>
 
   <!-- JavaScript -->
   <script>
@@ -266,7 +341,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
     }
     setInterval(updateTime, 1000);
     updateTime();
+
+    // Image modal
+    function openModal(src) {
+      document.getElementById("imgModal").classList.remove("hidden");
+      document.getElementById("modalImg").src = src;
+    }
+    function closeModal() {
+      document.getElementById("imgModal").classList.add("hidden");
+    }
   </script>
 </body>
 </html>
-

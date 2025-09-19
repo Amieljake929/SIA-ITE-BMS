@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barangay Community Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com  "></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         
@@ -87,7 +87,8 @@
 
     <!-- Hero Section -->
     <section id="home" class="relative">
-        <img src="../images/4-bagbag.png" alt="Panoramic view of barangay showing green landscapes, community center, and happy residents interacting" class="w-full h-96 md:h-screen object-cover">
+        <!-- REPLACED IMAGE WITH VIDEO -->
+        <video src="../images/bagbeg.mp4" autoplay muted loop playsinline class="w-full h-96 md:h-screen object-cover"></video>
         <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
             <div class="text-center px-4">
                 <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">Welcome to Our Barangay</h1>
@@ -177,7 +178,7 @@
                 
                 <!-- Facility 5 -->
                 <div class="facility-card bg-white rounded-lg shadow-md overflow-hidden transition duration-300">
-                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c126cf8d-2d2b-413c-b851-af02a06c2806.png" alt="Evacuation center with emergency supplies stored neatly and temporary beds ready for use" class="w-full h-48 object-cover">
+                    <img src="  https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c126cf8d-2d2b-413c-b851-af02a06c2806.png  " alt="Evacuation center with emergency supplies stored neatly and temporary beds ready for use" class="w-full h-48 object-cover">
                     <div class="p-6">
                         <h3 class="text-xl font-bold text-green-700 mb-2">Evacuation Center</h3>
                         <p class="text-gray-600 mb-4">A secure facility equipped with emergency supplies to serve as temporary shelter during disasters or emergencies.</p>
@@ -192,7 +193,7 @@
                 
                 <!-- Facility 6 -->
                 <div class="facility-card bg-white rounded-lg shadow-md overflow-hidden transition duration-300">
-                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/a4b79aa6-820f-4556-b4d6-071138f6fce1.png" alt="Public park with walking paths, benches, flowering plants, and clean open spaces for relaxation" class="w-full h-48 object-cover">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/a4b79aa6-820f-4556-b4d6-071138f6fce1.png  " alt="Public park with walking paths, benches, flowering plants, and clean open spaces for relaxation" class="w-full h-48 object-cover">
                     <div class="p-6">
                         <h3 class="text-xl font-bold text-green-700 mb-2">Community Park</h3>
                         <p class="text-gray-600 mb-4">A green space with walking paths, benches, and gardens for residents to relax, exercise, and enjoy nature.</p>
@@ -213,7 +214,7 @@
         <div class="container mx-auto px-6">
             <div class="flex flex-col lg:flex-row items-center">
                 <div class="lg:w-1/2 mb-10 lg:mb-0 lg:pr-10">
-                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/5ecbb296-24e9-465c-a93d-0fea78ad98b5.png" alt="Group of barangay officials and residents working together on a community project, showing unity and cooperation" class="rounded-lg shadow-lg w-full">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/5ecbb296-24e9-465c-a93d-0fea78ad98b5.png  " alt="Group of barangay officials and residents working together on a community project, showing unity and cooperation" class="rounded-lg shadow-lg w-full">
                 </div>
                 <div class="lg:w-1/2">
                     <h2 class="text-3xl font-bold text-green-700 mb-4">About Our Barangay</h2>
@@ -514,4 +515,3 @@
 </script>
 </body>
 </html>
-
