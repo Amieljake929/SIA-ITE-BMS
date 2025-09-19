@@ -148,7 +148,7 @@
                 
                 <!-- Facility 3 -->
                 <div class="facility-card bg-white rounded-lg shadow-md overflow-hidden transition duration-300">
-                    <img src="../images/brgyhall.png" alt="Barangay hall with clean facade, Philippine flag, and residents conducting business at the front desk" class="w-full h-48 object-cover">
+                    <img src="../images/ggg.jpg" alt="Barangay hall with clean facade, Philippine flag, and residents conducting business at the front desk" class="w-full h-48 object-cover">
                     <div class="p-6">
                         <h3 class="text-xl font-bold text-green-700 mb-2">Barangay Hall</h3>
                         <p class="text-gray-600 mb-4">The center of our community governance where you can process documents, seek assistance, and participate in community programs.</p>
@@ -178,7 +178,8 @@
                 
                 <!-- Facility 5 -->
                 <div class="facility-card bg-white rounded-lg shadow-md overflow-hidden transition duration-300">
-                    <img src="  https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c126cf8d-2d2b-413c-b851-af02a06c2806.png  " alt="Evacuation center with emergency supplies stored neatly and temporary beds ready for use" class="w-full h-48 object-cover">
+                    <img src="../images/evacuation.jpg" alt="Children playing in barangay playground with colorful equipment and safety flooring under supervision" class="w-full h-48 object-cover">
+
                     <div class="p-6">
                         <h3 class="text-xl font-bold text-green-700 mb-2">Evacuation Center</h3>
                         <p class="text-gray-600 mb-4">A secure facility equipped with emergency supplies to serve as temporary shelter during disasters or emergencies.</p>
@@ -193,7 +194,8 @@
                 
                 <!-- Facility 6 -->
                 <div class="facility-card bg-white rounded-lg shadow-md overflow-hidden transition duration-300">
-                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/a4b79aa6-820f-4556-b4d6-071138f6fce1.png  " alt="Public park with walking paths, benches, flowering plants, and clean open spaces for relaxation" class="w-full h-48 object-cover">
+                    <img src="../images/communitypark.png" alt="Children playing in barangay playground with colorful equipment and safety flooring under supervision" class="w-full h-48 object-cover">
+
                     <div class="p-6">
                         <h3 class="text-xl font-bold text-green-700 mb-2">Community Park</h3>
                         <p class="text-gray-600 mb-4">A green space with walking paths, benches, and gardens for residents to relax, exercise, and enjoy nature.</p>
@@ -214,7 +216,7 @@
         <div class="container mx-auto px-6">
             <div class="flex flex-col lg:flex-row items-center">
                 <div class="lg:w-1/2 mb-10 lg:mb-0 lg:pr-10">
-                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/5ecbb296-24e9-465c-a93d-0fea78ad98b5.png  " alt="Group of barangay officials and residents working together on a community project, showing unity and cooperation" class="rounded-lg shadow-lg w-full">
+                    <img src="../images/healthy.jpg" alt="Group of barangay officials and residents working together on a community project, showing unity and cooperation" class="rounded-lg shadow-lg w-full">
                 </div>
                 <div class="lg:w-1/2">
                     <h2 class="text-3xl font-bold text-green-700 mb-4">About Our Barangay</h2>
@@ -322,7 +324,7 @@
                                 </div>
                                 <div>
                                     <h4 class="font-medium text-green-700">Address</h4>
-                                    <p class="text-gray-600">123 Barangay Road, Municipality, Province 1234</p>
+                                    <p class="text-gray-600">625 Pagkabuhay Road, Barangay Bagbag, Novaliches, Quezon City, Philippines</p>
                                 </div>
                             </div>
                             <div class="flex">
@@ -334,7 +336,7 @@
                                 <div>
                                     <h4 class="font-medium text-green-700">Contact Numbers</h4>
                                     <p class="text-gray-600">(02) 1234-5678 (Office)</p>
-                                    <p class="text-gray-600">0917-123-4567 (Mobile)</p>
+                                    <p class="text-gray-600">0985-814-6011 (Mobile)</p>
                                 </div>
                             </div>
                             <div class="flex">
@@ -345,7 +347,7 @@
                                 </div>
                                 <div>
                                     <h4 class="font-medium text-green-700">Email</h4>
-                                    <p class="text-gray-600">barangay.portal@example.com</p>
+                                    <p class="text-gray-600">barangaybagbagmanagementsystem@gmail.com</p>
                                 </div>
                             </div>
                             <div class="flex">
