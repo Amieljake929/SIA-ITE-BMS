@@ -106,7 +106,7 @@ include '../../RIS_login/db_connect.php'; // not used here, ok lang
 
   <script>
     // ================== CONFIG ==================
-    const BASE_BMS   = '/ITE-SIA/BMS';
+    const BASE_BMS   = '/SIA-ITE-BMS/BMS';
     const API_UPLOAD = BASE_BMS + '/staff/Programs/api_programs_upload.php';
     const API_LIST   = BASE_BMS + '/staff/Programs/api_programs_list.php';
     const API_DELETE = BASE_BMS + '/staff/Programs/api_programs_delete.php'; // NEW

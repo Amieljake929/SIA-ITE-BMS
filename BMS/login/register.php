@@ -433,7 +433,7 @@ if (isset($_GET['error'])) {
       const errorContainer = document.getElementById('errorContainer');
       loading.classList.remove('hidden');
       errorContainer.classList.add('hidden');
-      fetch('http://localhost/ITE-SIA/RIS/ris_api.php?ref=' + refNumber, {
+      fetch('http://localhost/SIA-ITE-BMS/RIS/ris_api.php?ref=' + refNumber, {
         headers: { 'X-API-Key': 'my-secret-barangay-api-key-123' }
       })
       .then(res => res.json())

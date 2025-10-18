@@ -5,11 +5,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
     exit();
 }
 
-// Database connection
-$conn = new mysqli("localhost:3307", "root", "", "barangay_management_system");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Database Connection
+include '../../login/db_connect.php';
+
 $conn->close();
 ?>
 

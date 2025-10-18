@@ -38,10 +38,10 @@ while ($row = $res->fetch_assoc()) {
   // Build absolute URL that RIS can use directly
   if (strpos($fp, 'Programs/') === 0) {
     // already includes "Programs/"
-    $abs = '/ITE-SIA/BMS/staff/' . $fp;
+    $abs = '/SIA-ITE-BMS/BMS/staff/' . $fp;
   } else {
     // stored without "Programs/"
-    $abs = '/ITE-SIA/BMS/staff/Programs/' . $fp;
+    $abs = '/SIA-ITE-BMS/BMS/staff/Programs/' . $fp;
   }
 
   $items[] = [

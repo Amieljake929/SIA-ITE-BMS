@@ -75,7 +75,7 @@ if (strlen($password) < 6) {
 }
 
 // ✅ Connect to BMS Database
-$conn = new mysqli("localhost:3307", "root", "", "bms");
+$conn = new mysqli("localhost:3306", "root", "", "bms");
 
 if ($conn->connect_error) {
     http_response_code(500);

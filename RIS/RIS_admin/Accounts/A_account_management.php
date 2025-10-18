@@ -165,7 +165,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
   <script>
     // API config
-    const BMS_USERS_API = '/ITE-SIA/BMS/api/users.php';
+    // API config
+const BMS_USERS_API = '/SIA-ITE-BMS/BMS/api/users.php'; // <--- TAMA NA ITO!
     const API_TOKEN = 'RIS_TO_BMS_USERS_2025';
     const API_QS = 'api_token=' + encodeURIComponent(API_TOKEN);
 
