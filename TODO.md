@@ -1,4 +1,4 @@
-# ID Validator for Identification Section
+# ID Validator for Identification Section with OCR
 
 ## Tasks
 - [x] Update Valid ID Type field to a select dropdown with common Philippine ID types
@@ -7,4 +7,8 @@
 - [x] Add error message display for invalid ID formats
 - [x] Add form submission validation to prevent invalid submissions
 - [x] Make file upload fields required and add validation
+- [x] Integrate free OCR (Tesseract.js) for automatic ID type and number extraction from uploaded images
+- [x] Add OCR processing feedback and error handling
 - [x] Test the validation with sample inputs (Server started at localhost:8000, browser testing disabled)
+- [x] Update TODO.md to reflect completed OCR integration
+- [x] Add specification input for "Other" ID type selection

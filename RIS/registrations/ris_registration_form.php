@@ -9,6 +9,9 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Tesseract.js for OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -221,6 +224,8 @@
                                      <option value="prc">PRC ID</option>
                                      <option value="other">Other</option>
                                  </select>
+                                 <input type="text" name="other_valid_id" id="other_valid_id_input" placeholder="Specify other ID type"
+                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition mt-2 hidden">
                              </div>
                              <div>
                                  <label class="block text-sm font-medium text-gray-700 mb-2">Valid ID Number *</label>
@@ -236,6 +241,15 @@
                                      <input type="file" name="valid_id_image" id="valid_id_image" accept="image/*,application/pdf" class="hidden">
                                  </label>
                                  <span id="file_error" class="text-red-500 text-sm mt-1 hidden">Please upload your valid ID</span>
+                                 <div id="ocr_status" class="text-blue-600 text-sm mt-1 hidden">
+                                     <i class="fas fa-spinner fa-spin"></i> Processing OCR...
+                                 </div>
+                                 <div id="ocr_result" class="text-green-600 text-sm mt-1 hidden">
+                                     <i class="fas fa-check-circle"></i> ID details extracted successfully
+                                 </div>
+                                 <div id="ocr_error" class="text-orange-600 text-sm mt-1 hidden">
+                                     <i class="fas fa-exclamation-triangle"></i> OCR failed, please enter details manually
+                                 </div>
                              </div>
                              <div>
                                  <label class="block text-sm font-medium text-gray-700 mb-2">Selfie with ID *</label>
@@ -320,6 +334,18 @@
         document.getElementById('employment_status_select').addEventListener('change', function() {
             const otherInput = document.getElementById('other_employment_input');
             if (this.value === 'others') {
+                otherInput.classList.remove('hidden');
+                otherInput.required = true;
+            } else {
+                otherInput.classList.add('hidden');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        });
+
+        document.getElementById('valid_id_type').addEventListener('change', function() {
+            const otherInput = document.getElementById('other_valid_id_input');
+            if (this.value === 'other') {
                 otherInput.classList.remove('hidden');
                 otherInput.required = true;
             } else {
@@ -423,6 +449,122 @@
             }
         });
 
+        // OCR Processing Function
+        async function processOCR(file) {
+            const ocrStatus = document.getElementById('ocr_status');
+            const ocrResult = document.getElementById('ocr_result');
+            const ocrError = document.getElementById('ocr_error');
+
+            // Hide all status messages
+            ocrStatus.classList.add('hidden');
+            ocrResult.classList.add('hidden');
+            ocrError.classList.add('hidden');
+
+            // Show processing status
+            ocrStatus.classList.remove('hidden');
+
+            try {
+                const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+                    logger: m => console.log(m)
+                });
+
+                console.log('OCR Text:', text);
+
+                // Extract ID details from OCR text
+                const extractedData = extractIDDetails(text);
+
+                if (extractedData.idType && extractedData.idNumber) {
+                    // Auto-fill the form fields
+                    const idTypeSelect = document.getElementById('valid_id_type');
+                    const idNumberInput = document.getElementById('valid_id_number');
+
+                    // Set ID type
+                    idTypeSelect.value = extractedData.idType;
+
+                    // Trigger change event to update validation
+                    idTypeSelect.dispatchEvent(new Event('change'));
+
+                    // Set ID number
+                    idNumberInput.value = extractedData.idNumber;
+
+                    // Trigger input event to validate
+                    idNumberInput.dispatchEvent(new Event('input'));
+
+                    // Show success message
+                    ocrResult.classList.remove('hidden');
+                } else {
+                    // Show error message
+                    ocrError.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('OCR Error:', error);
+                ocrError.classList.remove('hidden');
+            } finally {
+                // Hide processing status
+                ocrStatus.classList.add('hidden');
+            }
+        }
+
+        // Function to extract ID details from OCR text
+        function extractIDDetails(text) {
+            const upperText = text.toUpperCase();
+
+            let idType = '';
+            let idNumber = '';
+
+            // Check for PhilID (12 digits)
+            const philidMatch = text.match(/\b(\d{12})\b/);
+            if (philidMatch && philidMatch[1]) {
+                idType = 'philid';
+                idNumber = philidMatch[1];
+            }
+
+            // Check for Driver's License (A01-12-345678 format)
+            const dlMatch = text.match(/\b([A-Z]\d{2}-\d{2}-\d{6})\b/);
+            if (dlMatch && dlMatch[1]) {
+                idType = 'drivers_license';
+                idNumber = dlMatch[1];
+            }
+
+            // Check for Passport (AA1234567 format)
+            const passportMatch = text.match(/\b([A-Z]{2}\d{7})\b/);
+            if (passportMatch && passportMatch[1]) {
+                idType = 'passport';
+                idNumber = passportMatch[1];
+            }
+
+            // Check for SSS ID (10 digits)
+            const sssMatch = text.match(/\b(\d{10})\b/);
+            if (sssMatch && sssMatch[1] && !idNumber) {
+                idType = 'sss';
+                idNumber = sssMatch[1];
+            }
+
+            // Check for TIN (9-12 digits)
+            const tinMatch = text.match(/\b(\d{9,12})\b/);
+            if (tinMatch && tinMatch[1] && !idNumber) {
+                idType = 'tin';
+                idNumber = tinMatch[1];
+            }
+
+            // Check for Voter's ID (10-12 digits)
+            const voterMatch = text.match(/\b(\d{10,12})\b/);
+            if (voterMatch && voterMatch[1] && !idNumber) {
+                idType = 'voters_id';
+                idNumber = voterMatch[1];
+            }
+
+            // Check for PRC ID (7 digits)
+            const prcMatch = text.match(/\b(\d{7})\b/);
+            if (prcMatch && prcMatch[1] && !idNumber) {
+                idType = 'prc';
+                idNumber = prcMatch[1];
+            }
+
+            return { idType, idNumber };
+        }
+
         // File upload event listeners
         document.getElementById('valid_id_image').addEventListener('change', function() {
             const fileText = document.getElementById('valid_id_text');
@@ -430,6 +572,12 @@
             if (this.files.length > 0) {
                 fileText.textContent = this.files[0].name;
                 fileError.classList.add('hidden');
+
+                // Process OCR if it's an image file
+                const file = this.files[0];
+                if (file.type.startsWith('image/')) {
+                    processOCR(file);
+                }
             } else {
                 fileText.textContent = 'Choose File';
                 fileError.classList.remove('hidden');
