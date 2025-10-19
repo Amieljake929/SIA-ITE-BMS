@@ -187,7 +187,7 @@
                              </div>
                              <div>
                                  <label class="block text-sm font-medium text-gray-700 mb-2">Employment Status *</label>
-                                 <select name="employment_status" required
+                                 <select name="employment_status" id="employment_status_select" required
                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
                                      <option value="">Select</option>
                                      <option value="student">Student</option>
@@ -198,6 +198,8 @@
                                      <option value="homemaker">Homemaker</option>
                                      <option value="others">Others</option>
                                  </select>
+                                 <input type="text" name="other_employment" id="other_employment_input" placeholder="Specify other employment status"
+                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition mt-2 hidden">
                              </div>
                          </div>
                     </section>
@@ -293,6 +295,18 @@
         document.getElementById('religion_select').addEventListener('change', function() {
             const otherInput = document.getElementById('other_religion_input');
             if (this.value === 'Other') {
+                otherInput.classList.remove('hidden');
+                otherInput.required = true;
+            } else {
+                otherInput.classList.add('hidden');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        });
+
+        document.getElementById('employment_status_select').addEventListener('change', function() {
+            const otherInput = document.getElementById('other_employment_input');
+            if (this.value === 'others') {
                 otherInput.classList.remove('hidden');
                 otherInput.required = true;
             } else {
