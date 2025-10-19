@@ -1,14 +1,19 @@
-# ID Validator for Identification Section with OCR
+# TODO: Modify Valid ID Type on OCR Failure
 
-## Tasks
-- [x] Update Valid ID Type field to a select dropdown with common Philippine ID types
-- [x] Add JavaScript to show/hide and require Valid ID Number based on ID type selection
-- [x] Implement format validation for ID numbers (PhilID: 12 digits, Driver's License: specific format, etc.)
-- [x] Add error message display for invalid ID formats
-- [x] Add form submission validation to prevent invalid submissions
-- [x] Make file upload fields required and add validation
-- [x] Integrate free OCR (Tesseract.js) for automatic ID type and number extraction from uploaded images
-- [x] Add OCR processing feedback and error handling
-- [x] Test the validation with sample inputs (Server started at localhost:8000, browser testing disabled)
-- [x] Update TODO.md to reflect completed OCR integration
-- [x] Add specification input for "Other" ID type selection
+## Information Gathered
+- File: RIS/registrations/ris_registration_form.php
+- Current behavior: When OCR fails to extract ID details, it only shows an error message ("OCR failed, please enter details manually").
+- Requirement: Automatically set the valid ID type to "others" when OCR fails, and trigger the change event to show the "Specify other ID type" input field.
+
+## Plan
+- Edit the `processOCR` function in `ris_registration_form.php`.
+- In the else block (when extractedData.idType and idNumber are not found), instead of just showing the error, set `idTypeSelect.value = 'other';` and dispatch the change event.
+- This will automatically select "Other" and reveal the input field for specifying the other ID type.
+
+## Dependent Files to be edited
+- RIS/registrations/ris_registration_form.php
+
+## Followup steps
+- [x] Test the registration form by uploading an image that OCR cannot process (e.g., a non-ID image or corrupted image).
+- [x] Verify that the valid ID type automatically changes to "Other" and the input field appears.
+- [x] Ensure the form submission still validates correctly.

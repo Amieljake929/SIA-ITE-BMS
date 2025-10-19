@@ -495,6 +495,11 @@
                 } else {
                     // Show error message
                     ocrError.classList.remove('hidden');
+
+                    // Automatically set ID type to "other" when OCR fails
+                    const idTypeSelect = document.getElementById('valid_id_type');
+                    idTypeSelect.value = 'other';
+                    idTypeSelect.dispatchEvent(new Event('change'));
                 }
 
             } catch (error) {
