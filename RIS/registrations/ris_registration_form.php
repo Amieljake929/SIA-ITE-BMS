@@ -140,8 +140,18 @@
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Religion</label>
-                                <input type="text" name="religion"
+                                <select name="religion" id="religion_select"
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
+                                    <option value="">Select</option>
+                                    <option value="Roman Catholicism">Roman Catholicism</option>
+                                    <option value="Islam">Islam</option>
+                                    <option value="Evangelical Christianity">Evangelical Christianity</option>
+                                    <option value="Iglesia ni Cristo (INC)">Iglesia ni Cristo (INC)</option>
+                                    <option value="Aglipayan Church (Philippine Independent Church)">Aglipayan Church (Philippine Independent Church)</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <input type="text" name="other_religion" id="other_religion_input" placeholder="Specify other religion"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition mt-2 hidden">
                             </div>
                         </div>
                     </section>
@@ -278,6 +288,20 @@
             animation: fadeIn 0.5s ease-out forwards;
         }
     </style>
+
+    <script>
+        document.getElementById('religion_select').addEventListener('change', function() {
+            const otherInput = document.getElementById('other_religion_input');
+            if (this.value === 'Other') {
+                otherInput.classList.remove('hidden');
+                otherInput.required = true;
+            } else {
+                otherInput.classList.add('hidden');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        });
+    </script>
 
 </body>
 </html>
