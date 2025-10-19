@@ -55,9 +55,7 @@ $birth_place = trim($_POST['birth_place']);
 $gender = $_POST['gender'];
 $email = $_POST['email'];
 $civil_status = $_POST['civil_status'];
-$house_no = trim($_POST['house_no']);
 $street = trim($_POST['street']);
-$purok = trim($_POST['purok']);
 $financial_status = $_POST['financial_status'];
 $contact_number = trim($_POST['contact_number']);
 $signature = trim($_POST['signature']);
@@ -86,12 +84,12 @@ $stmt->close();
 $stmt = $conn->prepare("INSERT INTO certificate_of_indigency (
     indigency_id, user_id, resident_id, first_name, middle_name, last_name,
     dob, birth_place, gender, civil_status,
-    house_no, street, purok, barangay, city, province,
+    street, barangay, city, province,
     financial_status, contact_number, signature, application_date, email
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Bagbag', 'Quezon City', 'Metro Manila', ?, ?, ?, ?, ?)");
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Bagbag', 'Quezon City', 'Metro Manila', ?, ?, ?, ?, ?)");
 
 $stmt->bind_param(
-    "siisssssssssssssss",
+    "siisssssssssssss",
     $indigency_id,
     $user_id,
     $resident_id,
@@ -102,9 +100,7 @@ $stmt->bind_param(
     $birth_place,
     $gender,
     $civil_status,
-    $house_no,
     $street,
-    $purok,
     $financial_status,
     $contact_number,
     $signature,

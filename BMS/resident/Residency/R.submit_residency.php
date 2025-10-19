@@ -67,9 +67,7 @@ $birth_place = $_POST['birth_place'] ?? '';
 $gender = $_POST['gender'] ?? '';
 $email = $_POST['email'] ?? '';
 $civil_status = $_POST['civil_status'] ?? '';
-$house_no = $_POST['house_no'] ?? '';
 $street = $_POST['street'] ?? '';
-$purok = $_POST['purok'] ?? '';
 $barangay = "Bagbag";
 $city = "Quezon City";
 $province = "Metro Manila";
@@ -82,13 +80,13 @@ $application_date = $_POST['application_date'] ?? date('Y-m-d');
 $stmt = $conn->prepare("
     INSERT INTO certificate_of_residency 
     (residency_id, user_id, resident_id, first_name, middle_name, last_name, 
-     dob, birth_place, gender, civil_status, house_no, street, purok, 
+     dob, birth_place, gender, civil_status, street, 
      barangay, city, province, purpose, contact_number, signature, application_date, email) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 $stmt->bind_param(
-    "siissssssssssssssssss",
+    "siissssssssssssssss",
     $residency_id,
     $user_id,
     $resident_id,
@@ -99,9 +97,7 @@ $stmt->bind_param(
     $birth_place,
     $gender,
     $civil_status,
-    $house_no,
     $street,
-    $purok,
     $barangay,
     $city,
     $province,

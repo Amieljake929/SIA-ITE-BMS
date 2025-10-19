@@ -12,12 +12,40 @@ include '../../login/db_connect.php';
 $user_id = $_SESSION['user_id'];
 
 // Check for any active request (Pending, Validated, or Approved)
-$stmt = $conn->prepare("SELECT indigency_id, status FROM certificate_of_indigency WHERE user_id = ? AND status IN ('Pending', 'Validated', 'Approved') ORDER BY application_date DESC LIMIT 1");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$active_request = $result->fetch_assoc();
-$stmt->close();
+$stmt_check = $conn->prepare("SELECT id, status, indigency_id FROM certificate_of_indigency WHERE user_id = ? AND status IN ('Pending', 'Validated', 'Approved') ORDER BY application_date DESC LIMIT 1");
+$stmt_check->bind_param("i", $user_id);
+$stmt_check->execute();
+$result_check = $stmt_check->get_result();
+$active_request = $result_check->fetch_assoc();
+$stmt_check->close();
+
+// --- NEW: Fetch resident data for autofill ---
+$resident_info = [];
+$stmt_user = $conn->prepare("
+    SELECT u.full_name, u.email, r.dob, r.pob, r.gender, r.civil_status, r.address, r.phone
+    FROM users u
+    LEFT JOIN residents r ON u.id = r.user_id
+    WHERE u.id = ?
+");
+$stmt_user->bind_param("i", $user_id);
+$stmt_user->execute();
+$result_user = $stmt_user->get_result();
+if ($result_user->num_rows > 0) {
+    $resident_info = $result_user->fetch_assoc();
+}
+$stmt_user->close();
+
+// --- NEW: Parse the full name into parts ---
+$first_name = '';
+$middle_name = '';
+$last_name = '';
+if (!empty($resident_info['full_name'])) {
+    $name_parts = explode(' ', trim($resident_info['full_name']));
+    $last_name = array_pop($name_parts);
+    $first_name = array_shift($name_parts);
+    $middle_name = implode(' ', $name_parts);
+}
+
 $conn->close();
 ?>
 
@@ -28,7 +56,6 @@ $conn->close();
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Certificate of Indigency Application</title>
 
-  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
@@ -37,11 +64,16 @@ $conn->close();
       outline: none;
       box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
     }
+    /* Style for readonly/disabled fields */
+    .readonly-field {
+        background-color: #f3f4f6; /* bg-gray-100 */
+        color: #4b5563; /* text-gray-600 */
+        cursor: not-allowed;
+    }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans flex flex-col min-h-screen">
 
-  <!-- Top Bar -->
   <div class="bg-gradient-to-r from-green-800 to-green-900 text-white text-sm px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex-1">
       <span id="datetime" class="font-medium tracking-wide">LOADING DATE...</span>
@@ -51,13 +83,9 @@ $conn->close();
     </div>
   </div>
 
-  <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
-
-  <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-        <!-- Home Icon Button and Title -->
+    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='../resident_dashboard.php'"
@@ -70,8 +98,6 @@ $conn->close();
         </div>
 
     
-
-      <!-- User Info with Dropdown -->
       <div class="relative inline-block text-right">
         <button id="userMenuButton" class="flex items-center font-medium cursor-pointer text-sm focus:outline-none whitespace-nowrap">
           <span class="text-gray-800">Logged in:</span>
@@ -96,14 +122,12 @@ $conn->close();
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="flex-grow px-6 py-8">
     <div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100">
 
       <h2 class="text-2xl font-bold text-green-800 mb-6 text-center">Certificate of Indigency</h2>
       <p class="text-gray-600 text-center mb-8 text-sm">Please provide accurate information to support your indigency certification.</p>
 
-      <!-- ✅ If Approved -->
       <?php if ($active_request && $active_request['status'] === 'Approved'): ?>
         <div class="bg-green-50 border-l-4 border-green-400 p-6 mb-8 rounded-lg">
           <div class="flex items-start">
@@ -113,7 +137,8 @@ $conn->close();
             <div class="ml-4">
               <h3 class="text-lg font-semibold text-green-800">Certificate Approved!</h3>
               <p class="text-green-700 mt-1">Your Certificate of Indigency has been <strong>approved</strong>.</p>
-              <p class="text-sm text-green-600 mt-2">
+               <p class="text-sm text-green-600 mt-2">
+                <strong>📄 Indigency ID:</strong> <?= htmlspecialchars($active_request['indigency_id']) ?><br>
                 <strong>📝 Softcopy:</strong> You can download and print it below.<br>
                 <strong>📬 Hardcopy:</strong> Ready to pick up at the Barangay Office.
               </p>
@@ -122,7 +147,7 @@ $conn->close();
         </div>
 
         <div class="text-center space-y-4">
-          <a href="../../staff/Request_Documents/print_document.php?tab=certificate_of_indigency&id=<?= $active_request['indigency_id'] ?>" target="_blank"
+          <a href="print_document.php?tab=certificate_of_indigency&id=<?= $active_request['id'] ?>" target="_blank"
              class="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition transform hover:scale-105">
             <i class="fas fa-print mr-2"></i> Print Certificate
           </a>
@@ -133,7 +158,6 @@ $conn->close();
           </div>
         </div>
 
-      <!-- ⚠️ If Pending or Validated -->
       <?php elseif ($active_request && in_array($active_request['status'], ['Pending', 'Validated'])): ?>
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 mb-8 rounded-lg">
           <div class="flex items-start">
@@ -164,102 +188,85 @@ $conn->close();
           </a>
         </div>
 
-      <!-- ✅ No Active Request - Show Form -->
       <?php else: ?>
         <form id="indigencyForm" action="R.submit_indigency.php" method="POST">
 
-          <!-- Full Name -->
           <section class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Personal Information</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Personal Information (Non-Editable)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($first_name) ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                <input type="text" name="middle_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
+                <input type="text" name="middle_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($middle_name) ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($last_name) ?>" readonly>
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                <input type="date" name="dob" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="date" name="dob" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['dob'] ?? '') ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Place of Birth</label>
-                <input type="text" name="birth_place" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="birth_place" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['pob'] ?? '') ?>" readonly>
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                <select name="gender" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                <select name="gender" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" disabled>
+                    <option value="Male" <?= ($resident_info['gender'] ?? '') == 'Male' ? 'selected' : '' ?>>Male</option>
+                    <option value="Female" <?= ($resident_info['gender'] ?? '') == 'Female' ? 'selected' : '' ?>>Female</option>
                 </select>
+                <input type="hidden" name="gender" value="<?= htmlspecialchars($resident_info['gender'] ?? '') ?>">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Civil Status</label>
-                <select name="civil_status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
-                  <option value="">Select Status</option>
-                  <option value="Single">Single</option>
-                  <option value="Married">Married</option>
-                  <option value="Widowed">Widowed</option>
-                  <option value="Separated">Separated</option>
+                <select name="civil_status" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" disabled>
+                    <option value="Single" <?= ($resident_info['civil_status'] ?? '') == 'Single' ? 'selected' : '' ?>>Single</option>
+                    <option value="Married" <?= ($resident_info['civil_status'] ?? '') == 'Married' ? 'selected' : '' ?>>Married</option>
+                    <option value="Widowed" <?= ($resident_info['civil_status'] ?? '') == 'Widowed' ? 'selected' : '' ?>>Widowed</option>
+                    <option value="Separated" <?= ($resident_info['civil_status'] ?? '') == 'Separated' ? 'selected' : '' ?>>Separated</option>
                 </select>
+                <input type="hidden" name="civil_status" value="<?= htmlspecialchars($resident_info['civil_status'] ?? '') ?>">
               </div>
-              <div>
-  <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-  <input type="email" name="email" id="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
-  <p id="emailError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid email address.</p>
-</div>
             </div>
-            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input type="email" name="email" id="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['email'] ?? '') ?>" readonly>
+            </div>
           </section>
 
-          <!-- Address -->
           <section class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Residential Address</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">House No.</label>
-                <input type="text" name="house_no" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Street</label>
-                <input type="text" name="street" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Purok/Sitio</label>
-                <input type="text" name="purok" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Residential Address (Non-Editable)</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
+                <input type="text" name="address" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['address'] ?? '') ?>" readonly>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
-                <input type="text" name="barangay" value="Bagbag" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+                <input type="text" name="barangay" value="Bagbag" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">City/Municipality</label>
-                <input type="text" name="city" value="Quezon City" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+                <input type="text" name="city" value="Quezon City" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
               </div>
             </div>
             <div class="mt-4">
               <label class="block text-sm font-medium text-gray-700 mb-1">Province</label>
-              <input type="text" name="province" value="Metro Manila" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+              <input type="text" name="province" value="Metro Manila" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
             </div>
           </section>
 
-          <!-- Indigency Status & Contact -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Indigency Details</h3>
             <div class="mb-4">
@@ -276,11 +283,10 @@ $conn->close();
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-              <input type="tel" name="contact_number" placeholder="09XXXXXXXXX" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+              <input type="tel" name="contact_number" placeholder="09XXXXXXXXX" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['phone'] ?? '') ?>" readonly>
             </div>
           </section>
 
-          <!-- Signature & Date -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Confirmation</h3>
             <div class="mb-4">
@@ -290,11 +296,10 @@ $conn->close();
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Date of Application</label>
-              <input type="date" name="application_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+              <input type="date" name="application_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" readonly required>
             </div>
           </section>
 
-          <!-- Submit Button -->
           <div class="text-center">
             <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
               <i class="fas fa-file-alt mr-2"></i> Submit Indigency Request
@@ -306,12 +311,10 @@ $conn->close();
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
     &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. | Empowering Communities Digitally.
   </footer>
 
-  <!-- JavaScript -->
   <script>
     function updateTime() {
       const now = new Date();
@@ -330,53 +333,51 @@ $conn->close();
       const dateInput = document.querySelector('input[name="application_date"]');
       if (dateInput) dateInput.value = today;
 
-      // FORM VALIDATION: Signature must match full name
+      const userMenuButton = document.getElementById('userMenuButton');
+      const userDropdown = document.getElementById('userDropdown');
+      
+      if (userMenuButton && userDropdown) {
+        userMenuButton.addEventListener('click', function(e) {
+          e.stopPropagation();
+          userDropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', function(e) {
+          if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+            userDropdown.classList.add('hidden');
+          }
+        });
+      }
+
       const form = document.getElementById('indigencyForm');
-      const firstName = document.querySelector('input[name="first_name"]');
-      const middleName = document.querySelector('input[name="middle_name"]');
-      const lastName = document.querySelector('input[name="last_name"]');
-      const signature = document.querySelector('input[name="signature"]');
+      if (form) {
+        const firstName = document.querySelector('input[name="first_name"]');
+        const middleName = document.querySelector('input[name="middle_name"]');
+        const lastName = document.querySelector('input[name="last_name"]');
+        const signature = document.querySelector('input[name="signature"]');
 
-      form.addEventListener('submit', function(e) {
-        let fullName = `${firstName.value.trim()} ${middleName.value.trim()} ${lastName.value.trim()}`.replace(/\s+/g, ' ').trim();
-        let sigValue = signature.value.trim();
+        form.addEventListener('submit', function(e) {
+          let fullName = `${firstName.value.trim()} ${middleName.value.trim()} ${lastName.value.trim()}`.replace(/\s+/g, ' ').trim();
+          let sigValue = signature.value.trim();
 
-        if (sigValue.toLowerCase() !== fullName.toLowerCase()) {
-          e.preventDefault();
-          alert("❌ Signature does not match your full name.\n\nExpected: " + fullName + "\nYou typed: " + sigValue);
-          signature.focus();
-          return false;
-        }
+          if (sigValue.toLowerCase() !== fullName.toLowerCase()) {
+            e.preventDefault();
+            alert("❌ Signature does not match your full name.\n\nExpected: " + fullName + "\nYou typed: " + sigValue);
+            signature.focus();
+            return false;
+          }
 
-        if (!confirm("Are you sure you want to submit your Certificate of Indigency request?")) {
-          e.preventDefault();
-        }
-      });
-    });
-
-    // Dropdown Toggle
-    const userMenuButton = document.getElementById('userMenuButton');
-    const userDropdown = document.getElementById('userDropdown');
-    userMenuButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userDropdown.classList.toggle('hidden');
-    });
-    document.addEventListener('click', (e) => {
-      if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-        userDropdown.classList.add('hidden');
+          if (!confirm("Are you sure you want to submit your Certificate of Indigency request?")) {
+            e.preventDefault();
+          }
+        });
       }
     });
-  </script>
 
-  <!-- Success Alert -->
-  <script>
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success') && urlParams.get('success') === 'indigency') {
       alert("✅ Success! Your Certificate of Indigency request has been submitted.\n\nStatus: Pending Approval\nYou will be notified once it's ready.");
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   </script>
-
-  
 </body>
 </html>

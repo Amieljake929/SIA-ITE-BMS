@@ -54,9 +54,7 @@ $email = $_POST['email'];
 $occupation = trim($_POST['occupation']);
 $monthly_income = floatval($_POST['monthly_income']);
 $contact_number = trim($_POST['contact_number']);
-$house_no = trim($_POST['house_no']);
 $street = trim($_POST['street']);
-$purok = trim($_POST['purok']);
 $application_date = $_POST['application_date'];
 $signature = trim($_POST['signature']);
 
@@ -83,16 +81,16 @@ $stmt->close();
 $stmt = $conn->prepare("INSERT INTO cedula (
     cedula_id, user_id, resident_id, first_name, middle_name, last_name,
     dob, birth_place, civil_status, occupation, monthly_income,
-    contact_number, house_no, street, purok, application_date, email
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    contact_number, street,application_date, email
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 $stmt->bind_param(
-    "siissssssssssssss",
+    "siissssssssssss",
     $cedula_id, $user_id, $resident_id,
     $first_name, $middle_name, $last_name,
     $dob, $birth_place, $civil_status,
     $occupation, $monthly_income,
-    $contact_number, $house_no, $street, $purok,
+    $contact_number, $street,
     $application_date, $email
 );
 

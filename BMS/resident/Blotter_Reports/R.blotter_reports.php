@@ -8,25 +8,30 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 // Database Connection
 include '../../login/db_connect.php';
 
-
 $user_id = $_SESSION['user_id'];
 
-// Get the resident_id linked to the user_id
-$stmt = $conn->prepare("SELECT r.id FROM residents r WHERE r.user_id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$resident = $result->fetch_assoc();
-
-if (!$resident) {
+// --- NEW: Fetch resident data for autofill ---
+$resident_info = [];
+$stmt_user = $conn->prepare("
+    SELECT u.full_name, u.email, r.id AS resident_id, r.age, r.gender, r.address, r.phone
+    FROM users u
+    LEFT JOIN residents r ON u.id = r.user_id
+    WHERE u.id = ?
+");
+$stmt_user->bind_param("i", $user_id);
+$stmt_user->execute();
+$result_user = $stmt_user->get_result();
+if ($result_user->num_rows > 0) {
+    $resident_info = $result_user->fetch_assoc();
+} else {
     die("Error: No associated resident profile found for this user.");
 }
+$stmt_user->close();
 
-$resident_id = $resident['id'];
-$stmt->close();
+$resident_id = $resident_info['resident_id'];
 
 // ✅ CHECK: Any active report (not Completed yet)
-$stmt = $conn->prepare("
+$stmt_check = $conn->prepare("
     SELECT id, status 
     FROM blotter_and_reports 
     WHERE resident_id = ? 
@@ -34,11 +39,23 @@ $stmt = $conn->prepare("
     ORDER BY created_at DESC 
     LIMIT 1
 ");
-$stmt->bind_param("i", $resident_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$active_report = $result->fetch_assoc();
-$stmt->close();
+$stmt_check->bind_param("i", $resident_id);
+$stmt_check->execute();
+$result_check = $stmt_check->get_result();
+$active_report = $result_check->fetch_assoc();
+$stmt_check->close();
+
+// --- NEW: Parse the full name into parts ---
+$first_name = '';
+$middle_name = '';
+$last_name = '';
+if (!empty($resident_info['full_name'])) {
+    $name_parts = explode(' ', trim($resident_info['full_name']));
+    $last_name = array_pop($name_parts);
+    $first_name = array_shift($name_parts);
+    $middle_name = implode(' ', $name_parts);
+}
+
 $conn->close();
 ?>
 
@@ -49,7 +66,6 @@ $conn->close();
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blotter Report - Bagbag</title>
 
-  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
@@ -58,11 +74,16 @@ $conn->close();
       outline: none;
       box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
     }
+     /* Style for readonly/disabled fields */
+    .readonly-field {
+        background-color: #f3f4f6; /* bg-gray-100 */
+        color: #4b5563; /* text-gray-600 */
+        cursor: not-allowed;
+    }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans flex flex-col min-h-screen">
 
-  <!-- Top Bar -->
   <div class="bg-gradient-to-r from-green-800 to-green-900 text-white text-sm px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex-1">
       <span id="datetime" class="font-medium tracking-wide">LOADING DATE...</span>
@@ -72,14 +93,9 @@ $conn->close();
     </div>
   </div>
 
-  <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
-
-
-  <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-        <!-- Home Icon Button and Title -->
+    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='../resident_dashboard.php'"
@@ -87,19 +103,15 @@ $conn->close();
             >
                 <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
             </button>
-
             <h1 class="text-xl font-bold text-green-800">Submit Blotter Report Form</h1>
         </div>
 
-
-      <!-- User Info with Dropdown -->
       <div class="relative inline-block text-right">
         <button id="userMenuButton" class="flex items-center font-medium cursor-pointer text-sm focus:outline-none whitespace-nowrap">
           <span class="text-gray-800">Logged in:</span>
           <span class="text-blue-700 ml-1"><?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
           <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
         </button>
-
         <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-10">
           <ul class="py-2 text-sm">
             <li>
@@ -108,10 +120,10 @@ $conn->close();
               </a>
             </li>
              <li>
-              <a href="R.blotter_report_history.php" class="block p-4 bg-white shadow rounded-lg hover:shadow-md transition">
-              <i class="fas fa-history text-green-600 mr-2"></i> View Report History
-              </a>
-            </li>
+               <a href="R.blotter_report_history.php" class="block px-5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-800 transition-colors duration-150 flex items-center">
+                 <i class="fas fa-history text-green-600 mr-3"></i> View Report History
+               </a>
+             </li>
             <li>
               <a href="../../login/logout.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
                 <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
@@ -123,7 +135,6 @@ $conn->close();
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="flex-grow px-6 py-8">
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100">
 
@@ -131,7 +142,6 @@ $conn->close();
       <p class="text-gray-600 text-center mb-8 text-sm">Please provide accurate information. All fields are required unless specified.</p>
 
       <?php if ($active_report): ?>
-        <!-- ❌ Alert if Active Report Exists -->
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
           <div class="flex">
             <div class="flex-shrink-0">
@@ -146,67 +156,56 @@ $conn->close();
             </div>
           </div>
         </div>
-
-        <div class="text-center">
-          <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg shadow">
-            <i class="fas fa-ban mr-2"></i> Report Still Active
-          </button>
-        </div>
-
         <div class="text-center mt-6">
           <a href="../resident_dashboard.php" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200">
             <i class="fas fa-home mr-2"></i> Back to Home
           </a>
         </div>
-
       <?php else: ?>
-        <!-- ✅ Blotter Form -->
-        <form action="R.submit_blotter_reports.php" method="POST">
+        <form id="blotterForm" action="R.submit_blotter_reports.php" method="POST">
 
-          <!-- Basic Information -->
           <section class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Basic Information of Complainant</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Basic Information of Complainant (Non-Editable)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($first_name) ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                <input type="text" name="middle_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
+                <input type="text" name="middle_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($middle_name) ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($last_name) ?>" readonly>
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
-                <input type="number" name="age" min="1" max="120" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="number" name="age" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['age'] ?? '') ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                <select name="gender" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
-                  <option value="">Select</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
+                <select name="gender" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" disabled>
+                  <option value="Male" <?= ($resident_info['gender'] ?? '') == 'Male' ? 'selected' : '' ?>>Male</option>
+                  <option value="Female" <?= ($resident_info['gender'] ?? '') == 'Female' ? 'selected' : '' ?>>Female</option>
                 </select>
+                <input type="hidden" name="gender" value="<?= htmlspecialchars($resident_info['gender'] ?? '') ?>">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number / Email</label>
-                <input type="text" name="contact" placeholder="09XXXXXXXXX or email@example.com" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="contact" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['phone'] ?? $resident_info['email'] ?? '') ?>" readonly>
               </div>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Complete Address</label>
-              <textarea name="address" rows="2" placeholder="House No., Street, Purok/Sitio, Barangay Bagbag" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required></textarea>
+              <textarea name="address" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" readonly><?= htmlspecialchars($resident_info['address'] ?? '') ?></textarea>
             </div>
           </section>
 
-          <!-- Incident Details -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Incident Details</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -247,7 +246,6 @@ $conn->close();
             </div>
           </section>
 
-          <!-- Involved Parties -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Involved Parties (if known)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -276,7 +274,6 @@ $conn->close();
             </div>
           </section>
 
-          <!-- Witnesses -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Witnesses (if any)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -295,7 +292,6 @@ $conn->close();
             </div>
           </section>
 
-          <!-- Purpose of Blotter -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Purpose of Reporting</h3>
             <div class="space-y-2">
@@ -318,7 +314,6 @@ $conn->close();
             </div>
           </section>
 
-          <!-- Signature -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Confirmation</h3>
             <div>
@@ -328,11 +323,10 @@ $conn->close();
             </div>
             <div class="mt-4">
               <label class="block text-sm font-medium text-gray-700 mb-1">Date of Report</label>
-              <input type="date" name="report_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+              <input type="date" name="report_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" readonly required>
             </div>
           </section>
 
-          <!-- Submit Button -->
           <div class="text-center">
             <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
               <i class="fas fa-file-alt mr-2"></i> Submit Blotter Report
@@ -344,12 +338,10 @@ $conn->close();
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
     &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. <br class="sm:hidden"> | Empowering Communities Digitally.
   </footer>
 
-  <!-- JavaScript -->
   <script>
     function updateTime() {
       const now = new Date();
@@ -363,25 +355,25 @@ $conn->close();
     setInterval(updateTime, 1000);
     updateTime();
 
-    // Auto-set today's date for report_date
     document.addEventListener("DOMContentLoaded", function () {
       const today = new Date().toISOString().split("T")[0];
       const dateInputs = document.querySelectorAll('input[name="report_date"], input[name="incident_date"]');
       dateInputs.forEach(input => {
         if (input) input.value = today;
       });
-    });
 
-    // Toggle User Dropdown
-    const userMenuButton = document.getElementById('userMenuButton');
-    const userDropdown = document.getElementById('userDropdown');
-    userMenuButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userDropdown.classList.toggle('hidden');
-    });
-    document.addEventListener('click', (e) => {
-      if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-        userDropdown.classList.add('hidden');
+      const userMenuButton = document.getElementById('userMenuButton');
+      const userDropdown = document.getElementById('userDropdown');
+      if(userMenuButton && userDropdown) {
+          userMenuButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('hidden');
+          });
+          document.addEventListener('click', (e) => {
+            if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+              userDropdown.classList.add('hidden');
+            }
+          });
       }
     });
   </script>

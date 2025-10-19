@@ -27,9 +27,7 @@ $civil_status = $conn->real_escape_string($_POST['civil_status']);
 $nationality = $conn->real_escape_string($_POST['nationality']);
 $email = $conn->real_escape_string($_POST['email']);
 
-$house_no = $conn->real_escape_string($_POST['house_no']);
 $street = $conn->real_escape_string($_POST['street']);
-$purok = $conn->real_escape_string($_POST['purok']);
 $residency_years = (int)$_POST['residency_years'];
 
 $id_type = $conn->real_escape_string($_POST['id_type']);
@@ -61,15 +59,15 @@ $stmt->close();
 $stmt = $conn->prepare("
     INSERT INTO barangay_clearance (
         resident_id, user_id, first_name, middle_name, last_name, dob, age, gender,
-        civil_status, nationality, email, house_no, street, purok, residency_years,
+        civil_status, nationality, email, street, residency_years,
         id_type, id_number, contact_number, purpose, signature, application_date
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 
 $stmt->bind_param(
-    "iissssssssssssissssss",
+    "iissssssssssissssss",
     $resident_id, $user_id, $first_name, $middle_name, $last_name, $dob, $age, $gender,
-    $civil_status, $nationality, $email, $house_no, $street, $purok, $residency_years,
+    $civil_status, $nationality, $email, $street, $residency_years,
     $id_type, $id_number, $contact_number, $purpose, $signature, $application_date
 );
 

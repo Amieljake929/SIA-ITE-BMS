@@ -66,7 +66,9 @@ $is_student        = isset($_POST['is_student']) ? 1 : 0;
 $is_indigenous     = isset($_POST['is_indigenous']) ? 1 : 0;
 
 // Sanitize input
-$full_name         = trim($conn->real_escape_string($_POST['full_name'] ?? ''));
+$first_name        = trim($conn->real_escape_string($_POST['first_name'] ?? ''));
+$middle_name       = !empty(trim($_POST['middle_name'])) ? trim($conn->real_escape_string($_POST['middle_name'])) : null; // Set to NULL if empty
+$last_name         = trim($conn->real_escape_string($_POST['last_name'] ?? ''));
 $email             = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
 $dob               = $conn->real_escape_string($_POST['dob'] ?? '');
 $pob               = trim($conn->real_escape_string($_POST['pob'] ?? ''));
@@ -84,7 +86,7 @@ $valid_id_type     = !empty(trim($_POST['valid_id_type'] ?? '')) ? trim($conn->r
 $valid_id_number   = !empty(trim($_POST['valid_id_number'] ?? '')) ? trim($conn->real_escape_string($_POST['valid_id_number'])) : null;
 
 // Validation: Required fields
-if (!$email || !$full_name || !$dob || !$pob || !$gender || !$civil_status || !$nationality || !$address || !$phone || !$employment_status || !$resident_type) {
+if (!$email || !$first_name || !$last_name || !$dob || !$pob || !$gender || !$civil_status || !$nationality || !$address || !$phone || !$employment_status || !$resident_type) {
     header("Location: ris_registration_form.php?error=" . urlencode("Please fill in all required fields."));
     exit;
 }
@@ -111,13 +113,13 @@ if ($res && $res->num_rows === 1) {
 $new_internal_id = str_pad($lastId + 1, 8, '0', STR_PAD_LEFT);
 if ($new_internal_id === '00000000') $new_internal_id = '00000001';
 
-// Prepare INSERT statement
+// **UPDATED**: Prepare INSERT statement for new columns
 $sql = "INSERT INTO registration (
-    id, status, full_name, email, dob, pob, age, gender, civil_status,
+    id, status, first_name, middle_name, last_name, email, dob, pob, age, gender, civil_status,
     nationality, religion, address, phone, resident_type, stay_length,
     employment_status, valid_id_type, valid_id_number, valid_id_image, selfie_with_id,
     is_senior_citizen, is_pwd, is_solo_parent, is_voter, is_student, is_indigenous
-) VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+) VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
@@ -126,9 +128,10 @@ if (!$stmt) {
     exit;
 }
 
+// **UPDATED**: Bind parameters for new columns
 $stmt->bind_param(
-    "sssssisssssssisssssiiiiii",
-    $new_internal_id, $full_name, $email, $dob, $pob, $age, $gender, $civil_status,
+    "sssssssisssssssisssssiiiiii",
+    $new_internal_id, $first_name, $middle_name, $last_name, $email, $dob, $pob, $age, $gender, $civil_status,
     $nationality, $religion, $address, $phone, $resident_type, $stay_length,
     $employment_status, $valid_id_type, $valid_id_number, $valid_id_image, $selfie_with_id,
     $is_senior_citizen, $is_pwd, $is_solo_parent, $is_voter, $is_student, $is_indigenous

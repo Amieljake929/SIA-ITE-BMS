@@ -26,8 +26,16 @@ if (!in_array($action, ['approve', 'reject']) || !$id) {
 $conn->begin_transaction();
 
 try {
-    // Check if registration exists and is still pending
-    $stmt = $conn->prepare("SELECT id, full_name, email, status FROM registration WHERE id = ? FOR UPDATE");
+    // **UPDATED**: Check if registration exists and is still pending
+    // We now construct the full_name using CONCAT_WS
+    $stmt = $conn->prepare("
+        SELECT id, 
+               CONCAT_WS(' ', first_name, middle_name, last_name) AS full_name, 
+               email, 
+               status 
+        FROM registration 
+        WHERE id = ? FOR UPDATE
+    ");
     $stmt->bind_param("s", $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -69,6 +77,7 @@ try {
         $stmt3->close();
 
         // Send email with PHPMailer
+        // This part will now work because $reg['full_name'] exists from our updated query
         require_once 'send_reference_email.php';
         $emailSent = sendReferenceNumber($reg['email'], $reg['full_name'], $reference_number);
 

@@ -9,8 +9,13 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 include '../RIS_login/db_connect.php';
 
 
-// Get residents data
-$sql = "SELECT * FROM registration ORDER BY created_at DESC";
+// UPDATED: Get residents data and construct full_name using CONCAT_WS
+$sql = "
+    SELECT *, 
+           CONCAT_WS(' ', first_name, middle_name, last_name) AS full_name 
+    FROM registration 
+    ORDER BY created_at DESC
+";
 $result = $conn->query($sql);
 ?>
 <!DOCTYPE html>
@@ -24,7 +29,6 @@ $result = $conn->query($sql);
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans flex flex-col min-h-screen">
 
-  <!-- Top Bar -->
   <div class="bg-gradient-to-r from-green-800 to-green-900 text-white text-sm px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex-1">
       <span id="datetime" class="font-medium tracking-wide">Loading...</span>
@@ -34,13 +38,10 @@ $result = $conn->query($sql);
     </div>
   </div>
 
-  <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
 
   <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-        <!-- Home Icon Button and Title -->
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='ris_admin_dashboard.php'"
@@ -78,27 +79,22 @@ $result = $conn->query($sql);
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="flex-1 container mx-auto px-6 py-6">
 
-    <!-- Show message if exists -->
-<?php if (isset($_SESSION['message'])): ?>
+    <?php if (isset($_SESSION['message'])): ?>
   <div class="mb-6 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 rounded shadow-sm text-sm" id="message">
     <?= htmlspecialchars($_SESSION['message']); ?>
   </div>
   <?php unset($_SESSION['message']); ?>
 <?php endif; ?>
 
-    <!-- SEARCH & FILTER BAR -->
-<div class="flex flex-col sm:flex-row gap-4 mb-6">
-  <!-- Search Input -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-6">
   <div class="flex-1">
     <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
     <input type="text" id="searchInput" placeholder="Search by name, email, phone, address..." 
            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
   </div>
 
-  <!-- Status Filter -->
   <div>
     <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
     <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
@@ -110,7 +106,6 @@ $result = $conn->query($sql);
   </div>
 </div>
 
-<!-- TABLE -->
 <div class="bg-white shadow-md rounded-lg overflow-hidden">
   <div class="px-6 py-4 border-b border-gray-200 bg-green-100">
     <h2 class="text-lg font-semibold text-green-900">List of Registered Residents</h2>
@@ -132,7 +127,6 @@ $result = $conn->query($sql);
           <th class="px-4 py-2">Email</th>
           <th class="px-4 py-2">Employment</th>
           
-          <!-- New: Demographic Indicators -->
           <th class="px-4 py-2">Senior</th>
           <th class="px-4 py-2">PWD</th>
           <th class="px-4 py-2">Solo Parent</th>
@@ -172,7 +166,6 @@ $result = $conn->query($sql);
               <td class="px-4 py-2"><?= htmlspecialchars($row['email']) ?></td>
               <td class="px-4 py-2"><?= htmlspecialchars($row['employment_status']) ?></td>
 
-              <!-- Demographic Indicators (Icons or ✅) -->
               <td class="px-4 py-2 text-center"><?= $row['is_senior_citizen'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
               <td class="px-4 py-2 text-center"><?= $row['is_pwd'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
               <td class="px-4 py-2 text-center"><?= $row['is_solo_parent'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
@@ -213,12 +206,10 @@ $result = $conn->query($sql);
   </main>
   
 
-  <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
     &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. | Empowering Communities Digitally.
   </footer>
 
-  <!-- Scripts -->
   <script>
     function updateTime() {
       const now = new Date();
@@ -242,37 +233,37 @@ $result = $conn->query($sql);
   </script>
 
  <script>
-  // Live Search & Filter
-  function filterTable() {
-    const searchInput = document.getElementById('searchInput').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
-    const tableRows = document.querySelectorAll('#tableBody tr');
+   // Live Search & Filter
+   function filterTable() {
+     const searchInput = document.getElementById('searchInput').value.toLowerCase();
+     const statusFilter = document.getElementById('statusFilter').value;
+     const tableRows = document.querySelectorAll('#tableBody tr');
 
-    tableRows.forEach(row => {
-      const name = row.dataset.name || '';
-      const email = row.dataset.email || '';
-      const phone = row.dataset.phone || '';
-      const address = row.dataset.address || '';
-      const status = row.dataset.status || '';
+     tableRows.forEach(row => {
+       const name = row.dataset.name || '';
+       const email = row.dataset.email || '';
+       const phone = row.dataset.phone || '';
+       const address = row.dataset.address || '';
+       const status = row.dataset.status || '';
 
-      const matchesSearch = name.includes(searchInput) ||
-                            email.includes(searchInput) ||
-                            phone.includes(searchInput) ||
-                            address.includes(searchInput);
+       const matchesSearch = name.includes(searchInput) ||
+                             email.includes(searchInput) ||
+                             phone.includes(searchInput) ||
+                             address.includes(searchInput);
 
-      const matchesStatus = statusFilter === 'all' || status === statusFilter;
+       const matchesStatus = statusFilter === 'all' || status === statusFilter;
 
-      if (matchesSearch && matchesStatus) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
-  }
+       if (matchesSearch && matchesStatus) {
+         row.style.display = '';
+       } else {
+         row.style.display = 'none';
+       }
+     });
+   }
 
-  // Attach event listeners
-  document.getElementById('searchInput').addEventListener('keyup', filterTable);
-  document.getElementById('statusFilter').addEventListener('change', filterTable);
+   // Attach event listeners
+   document.getElementById('searchInput').addEventListener('keyup', filterTable);
+   document.getElementById('statusFilter').addEventListener('change', filterTable);
 </script>
 </body>
 </html>

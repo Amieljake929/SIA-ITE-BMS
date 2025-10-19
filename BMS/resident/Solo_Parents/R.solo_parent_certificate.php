@@ -11,12 +11,40 @@ include '../../login/db_connect.php';
 $user_id = $_SESSION['user_id'];
 
 // Check for any active request (Pending, Validated, or Approved)
-$stmt = $conn->prepare("SELECT solo_parent_id, status FROM solo_parents WHERE user_id = ? AND status IN ('Pending', 'Validated', 'Approved') ORDER BY application_date DESC LIMIT 1");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$active_request = $result->fetch_assoc();
-$stmt->close();
+$stmt_check = $conn->prepare("SELECT id, solo_parent_id, status FROM solo_parents WHERE user_id = ? AND status IN ('Pending', 'Validated', 'Approved') ORDER BY application_date DESC LIMIT 1");
+$stmt_check->bind_param("i", $user_id);
+$stmt_check->execute();
+$result_check = $stmt_check->get_result();
+$active_request = $result_check->fetch_assoc();
+$stmt_check->close();
+
+// --- NEW: Fetch resident data for autofill ---
+$resident_info = [];
+$stmt_user = $conn->prepare("
+    SELECT u.full_name, u.email, r.address, r.phone
+    FROM users u
+    LEFT JOIN residents r ON u.id = r.user_id
+    WHERE u.id = ?
+");
+$stmt_user->bind_param("i", $user_id);
+$stmt_user->execute();
+$result_user = $stmt_user->get_result();
+if ($result_user->num_rows > 0) {
+    $resident_info = $result_user->fetch_assoc();
+}
+$stmt_user->close();
+
+// --- NEW: Parse the full name into parts ---
+$first_name = '';
+$middle_name = '';
+$last_name = '';
+if (!empty($resident_info['full_name'])) {
+    $name_parts = explode(' ', trim($resident_info['full_name']));
+    $last_name = array_pop($name_parts);
+    $first_name = array_shift($name_parts);
+    $middle_name = implode(' ', $name_parts);
+}
+
 $conn->close();
 ?>
 
@@ -27,7 +55,6 @@ $conn->close();
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Solo Parent Certificate Application</title>
 
-  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
@@ -37,11 +64,16 @@ $conn->close();
       box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
     }
     .child-row { @apply grid grid-cols-1 md:grid-cols-5 gap-3 mb-3 items-end; }
+     /* Style for readonly/disabled fields */
+    .readonly-field {
+        background-color: #f3f4f6; /* bg-gray-100 */
+        color: #4b5563; /* text-gray-600 */
+        cursor: not-allowed;
+    }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans flex flex-col min-h-screen">
 
-  <!-- Top Bar -->
   <div class="bg-gradient-to-r from-green-800 to-green-900 text-white text-sm px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex-1">
       <span id="datetime" class="font-medium tracking-wide">LOADING DATE...</span>
@@ -51,13 +83,9 @@ $conn->close();
     </div>
   </div>
 
-  <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
-
-  <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-        <!-- Home Icon Button and Title -->
+    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='../resident_dashboard.php'"
@@ -65,20 +93,15 @@ $conn->close();
             >
                 <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
             </button>
-
             <h1 class="text-xl font-bold text-green-800">Solo Parent Certificate Application</h1>
         </div>
 
-    
-
-      <!-- User Info with Dropdown -->
       <div class="relative inline-block text-right">
         <button id="userMenuButton" class="flex items-center font-medium cursor-pointer text-sm focus:outline-none whitespace-nowrap">
           <span class="text-gray-800">Logged in:</span>
           <span class="text-blue-700 ml-1"><?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
           <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
         </button>
-
         <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-10">
           <ul class="py-2 text-sm">
             <li>
@@ -97,7 +120,6 @@ $conn->close();
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="flex-grow px-6 py-8">
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100">
 
@@ -106,7 +128,6 @@ $conn->close();
         Please provide accurate information. You will also need to submit supporting documents (e.g., death certificate, birth certificate).
       </p>
 
-      <!-- ✅ Approved Request -->
       <?php if ($active_request && $active_request['status'] === 'Approved'): ?>
         <div class="bg-green-50 border-l-4 border-green-400 p-6 mb-8 rounded-lg">
           <div class="flex items-start">
@@ -126,7 +147,7 @@ $conn->close();
         </div>
 
         <div class="text-center space-y-4">
-          <a href="print_document.php?tab=solo_parent&id=<?= $active_request['solo_parent_id'] ?>" target="_blank"
+          <a href="print_document.php?tab=solo_parent&id=<?= $active_request['id'] ?>" target="_blank"
              class="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition transform hover:scale-105">
             <i class="fas fa-print mr-2"></i> Print Certificate
           </a>
@@ -137,7 +158,6 @@ $conn->close();
           </div>
         </div>
 
-      <!-- ⚠️ Pending or Validated Request -->
       <?php elseif ($active_request && in_array($active_request['status'], ['Pending', 'Validated'])): ?>
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 mb-8 rounded-lg">
           <div class="flex items-start">
@@ -168,81 +188,61 @@ $conn->close();
           </a>
         </div>
 
-      <!-- ✅ No Active Request - Show Form -->
       <?php else: ?>
-        <!-- ✅ Solo Parent Form -->
         <form id="soloParentForm" action="R.submit_solo_parent.php" method="POST" enctype="multipart/form-data">
 
-          <!-- Parent Full Name -->
           <section class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Parent's Information</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Parent's Information (Non-Editable)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($first_name) ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                <input type="text" name="middle_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
+                <input type="text" name="middle_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($middle_name) ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($last_name) ?>" readonly>
               </div>
             </div>
 
-            <div>
-  <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-  <input type="email" name="email" id="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
-  <p id="emailError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid email address.</p>
-</div>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">House No.</label>
-                <input type="text" name="house_no" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Street</label>
-                <input type="text" name="street" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Purok/Sitio</label>
-                <input type="text" name="purok" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
+                <input type="text" name="address" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['address'] ?? '') ?>" readonly>
             </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
-                <input type="text" name="barangay" value="Bagbag" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+                <input type="text" name="barangay" value="Bagbag" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">City/Municipality</label>
-                <input type="text" name="city" value="Quezon City" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+                <input type="text" name="city" value="Quezon City" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
               </div>
             </div>
             <div class="mt-4">
               <label class="block text-sm font-medium text-gray-700 mb-1">Province</label>
-              <input type="text" name="province" value="Metro Manila" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+              <input type="text" name="province" value="Metro Manila" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
             </div>
           </section>
 
-          <!-- Occupation & Income -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Employment & Income</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Occupation</label>
-                <input type="text" name="occupation" placeholder="e.g., Vendor, Driver, OFW" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
+                <input type="text" name="occupation" placeholder="e.g., Vendor, Driver, OFW" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Monthly Income (PHP)</label>
-                <input type="number" name="monthly_income" min="0" step="0.01" placeholder="0.00" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
+                <input type="number" name="monthly_income" min="0" step="0.01" placeholder="0.00" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
               </div>
             </div>
           </section>
 
-          <!-- Category -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Parental Status</h3>
             <div>
@@ -260,7 +260,6 @@ $conn->close();
             </div>
           </section>
 
-          <!-- Children -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Children Information</h3>
             <p class="text-xs text-gray-500 mb-3">Add at least one child.</p>
@@ -298,12 +297,17 @@ $conn->close();
             </button>
           </section>
 
-          <!-- Contact & Signature -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Contact & Confirmation</h3>
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-              <input type="tel" name="contact_number" placeholder="09XXXXXXXXX" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                    <input type="tel" name="contact_number" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['phone'] ?? '') ?>" readonly>
+                </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <input type="email" name="email" id="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['email'] ?? '') ?>" readonly>
+                </div>
             </div>
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-700 mb-1">Applicant's Signature</label>
@@ -312,11 +316,10 @@ $conn->close();
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Date of Application</label>
-              <input type="date" name="application_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+              <input type="date" name="application_date" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" readonly required>
             </div>
           </section>
 
-          <!-- Submit Button -->
           <div class="text-center">
             <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
               <i class="fas fa-file-alt mr-2"></i> Submit Solo Parent Request
@@ -328,12 +331,10 @@ $conn->close();
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
     &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. <br class="sm:hidden"> | Empowering Communities Digitally.
   </footer>
 
-  <!-- JavaScript -->
   <script>
     function updateTime() {
       const now = new Date();
@@ -390,44 +391,46 @@ $conn->close();
 
       // Validate signature
       const form = document.getElementById('soloParentForm');
-      const firstName = document.querySelector('input[name="first_name"]');
-      const middleName = document.querySelector('input[name="middle_name"]');
-      const lastName = document.querySelector('input[name="last_name"]');
-      const signature = document.querySelector('input[name="signature"]');
+      if (form) {
+        const firstName = document.querySelector('input[name="first_name"]');
+        const middleName = document.querySelector('input[name="middle_name"]');
+        const lastName = document.querySelector('input[name="last_name"]');
+        const signature = document.querySelector('input[name="signature"]');
 
-      form.addEventListener('submit', function(e) {
-        let fullName = `${firstName.value.trim()} ${middleName.value.trim()} ${lastName.value.trim()}`.replace(/\s+/g, ' ').trim();
-        let sigValue = signature.value.trim();
+        form.addEventListener('submit', function(e) {
+          let fullName = `${firstName.value.trim()} ${middleName.value.trim()} ${lastName.value.trim()}`.replace(/\s+/g, ' ').trim();
+          let sigValue = signature.value.trim();
 
-        if (sigValue.toLowerCase() !== fullName.toLowerCase()) {
-          e.preventDefault();
-          alert("❌ Signature does not match your full name.\n\nExpected: " + fullName + "\nYou typed: " + sigValue);
-          signature.focus();
-          return false;
-        }
+          if (sigValue.toLowerCase() !== fullName.toLowerCase()) {
+            e.preventDefault();
+            alert("❌ Signature does not match your full name.\n\nExpected: " + fullName + "\nYou typed: " + sigValue);
+            signature.focus();
+            return false;
+          }
 
-        if (!confirm("Are you sure you want to submit your Solo Parent request?")) {
-          e.preventDefault();
-        }
-      });
-    });
+          if (!confirm("Are you sure you want to submit your Solo Parent request?")) {
+            e.preventDefault();
+          }
+        });
+      }
 
-    // Dropdown Toggle
-    const userMenuButton = document.getElementById('userMenuButton');
-    const userDropdown = document.getElementById('userDropdown');
-    userMenuButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userDropdown.classList.toggle('hidden');
-    });
-    document.addEventListener('click', (e) => {
-      if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-        userDropdown.classList.add('hidden');
+      // Dropdown Toggle
+      const userMenuButton = document.getElementById('userMenuButton');
+      const userDropdown = document.getElementById('userDropdown');
+      if (userMenuButton && userDropdown) {
+          userMenuButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('hidden');
+          });
+          document.addEventListener('click', (e) => {
+            if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+              userDropdown.classList.add('hidden');
+            }
+          });
       }
     });
-  </script>
 
-  <!-- Success Alert -->
-  <script>
+    // Success Alert
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success') && urlParams.get('success') === 'solo_parent') {
       alert("✅ Success! Your Solo Parent Certificate request has been submitted.\n\nStatus: Pending Approval\nYou will be notified once it's ready.");

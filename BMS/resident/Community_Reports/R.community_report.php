@@ -8,19 +8,48 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
 // Database Connection
 include '../../login/db_connect.php';
 
-
 $user_id = $_SESSION['user_id'];
 
+// --- NEW: Fetch resident data for autofill ---
+$resident_info = [];
+$stmt_user = $conn->prepare("
+    SELECT u.full_name, u.email, r.id AS resident_id, r.address, r.phone
+    FROM users u
+    LEFT JOIN residents r ON u.id = r.user_id
+    WHERE u.id = ?
+");
+$stmt_user->bind_param("i", $user_id);
+$stmt_user->execute();
+$result_user = $stmt_user->get_result();
+if ($result_user->num_rows > 0) {
+    $resident_info = $result_user->fetch_assoc();
+} else {
+    die("Error: No associated resident profile found for this user.");
+}
+$stmt_user->close();
+
 // Check if there's ANY active report (Pending, Assigned, or For Closing)
-$stmt = $conn->prepare("SELECT community_report_id, status FROM community_reports 
-                        WHERE user_id = ? 
-                        AND status IN ('Pending', 'Assigned', 'For Closing') 
-                        ORDER BY created_at DESC LIMIT 1");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$active_report = $result->fetch_assoc(); // Magbabalik kung meron
-$stmt->close();
+$stmt_check = $conn->prepare("SELECT community_report_id, status FROM community_reports 
+                           WHERE user_id = ? 
+                           AND status IN ('Pending', 'Assigned', 'For Closing') 
+                           ORDER BY created_at DESC LIMIT 1");
+$stmt_check->bind_param("i", $user_id);
+$stmt_check->execute();
+$result_check = $stmt_check->get_result();
+$active_report = $result_check->fetch_assoc();
+$stmt_check->close();
+
+// --- NEW: Parse the full name into parts ---
+$first_name = '';
+$middle_name = '';
+$last_name = '';
+if (!empty($resident_info['full_name'])) {
+    $name_parts = explode(' ', trim($resident_info['full_name']));
+    $last_name = array_pop($name_parts);
+    $first_name = array_shift($name_parts);
+    $middle_name = implode(' ', $name_parts);
+}
+
 $conn->close();
 ?>
 
@@ -31,7 +60,6 @@ $conn->close();
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Community Report Form</title>
 
-  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
@@ -44,11 +72,16 @@ $conn->close();
       resize: vertical;
       min-height: 100px;
     }
+    /* Style for readonly/disabled fields */
+    .readonly-field {
+        background-color: #f3f4f6; /* bg-gray-100 */
+        color: #4b5563; /* text-gray-600 */
+        cursor: not-allowed;
+    }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans flex flex-col min-h-screen">
 
-  <!-- Top Bar -->
   <div class="bg-gradient-to-r from-green-800 to-green-900 text-white text-sm px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex-1">
       <span id="datetime" class="font-medium tracking-wide">LOADING DATE...</span>
@@ -58,14 +91,9 @@ $conn->close();
     </div>
   </div>
 
-  <!-- Main Header -->
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4">
-
-
-  <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-        <!-- Home Icon Button and Title -->
+    <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
         <div class="flex items-center space-x-4">
-            <!-- Home Icon Button -->
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='../resident_dashboard.php'"
@@ -73,20 +101,14 @@ $conn->close();
             >
                 <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
             </button>
-
             <h1 class="text-xl font-bold text-green-800">Submit Community Report Form</h1>
         </div>
-
-    
-
-      <!-- User Info with Dropdown -->
       <div class="relative inline-block text-right">
         <button id="userMenuButton" class="flex items-center font-medium cursor-pointer text-sm focus:outline-none whitespace-nowrap">
           <span class="text-gray-800">Logged in:</span>
           <span class="text-blue-700 ml-1"><?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
           <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
         </button>
-
         <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-10">
           <ul class="py-2 text-sm">
             <li>
@@ -95,13 +117,13 @@ $conn->close();
               </a>
             </li>
             <li>
-              <a href="../../login/logout.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
-                <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
+              <a href="R.report_history.php" class="block px-5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-800 transition-colors duration-150 flex items-center">
+                <i class="fas fa-history text-green-600 mr-3"></i> View Report History
               </a>
             </li>
             <li>
-              <a href="R.report_history.php" class="block p-4 bg-white shadow rounded-lg hover:shadow-md transition">
-              <i class="fas fa-history text-green-600 mr-2"></i> View Report History
+              <a href="../../login/logout.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
+                <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
               </a>
             </li>
           </ul>
@@ -110,7 +132,6 @@ $conn->close();
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="flex-grow px-6 py-8">
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100">
 
@@ -120,7 +141,6 @@ $conn->close();
       </p>
 
       <?php if ($active_report): ?>
-        <!-- ❌ Active Report Alert (Pending, Assigned, or For Closing) -->
         <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
           <div class="flex">
             <div class="flex-shrink-0">
@@ -135,87 +155,69 @@ $conn->close();
             </div>
           </div>
         </div>
-
-        <div class="text-center">
-          <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg shadow">
-            <i class="fas fa-ban mr-2"></i> Report Already Active
-          </button>
-        </div>
-
         <div class="text-center mt-6">
           <a href="../resident_dashboard.php" class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200">
             <i class="fas fa-home mr-2"></i> Back to Home
           </a>
         </div>
-
       <?php else: ?>
-        <!-- ✅ Community Report Form (No active report) -->
         <form id="reportForm" action="R.submit_community_report.php" method="POST" enctype="multipart/form-data">
 
-          <!-- Complainant Full Name -->
           <section class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Complainant Information</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Complainant Information (Non-Editable)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="first_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($first_name) ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                <input type="text" name="middle_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
+                <input type="text" name="middle_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($middle_name) ?>" readonly>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="text" name="last_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($last_name) ?>" readonly>
               </div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
+              <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['address'] ?? '') ?>" readonly>
+              <input type="hidden" name="house_no" value="">
+              <input type="hidden" name="street" value="<?= htmlspecialchars($resident_info['address'] ?? '') ?>">
+              <input type="hidden" name="purok" value="">
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">House No.</label>
-                <input type="text" name="house_no" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Street</label>
-                <input type="text" name="street" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Purok/Sitio</label>
-                <input type="text" name="purok" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
-              </div>
-            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
-                <input type="text" name="barangay" value="Bagbag" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+                <input type="text" name="barangay" value="Bagbag" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">City/Municipality</label>
-                <input type="text" name="city" value="Quezon City" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+                <input type="text" name="city" value="Quezon City" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
               </div>
             </div>
             <div class="mt-4">
               <label class="block text-sm font-medium text-gray-700 mb-1">Province</label>
-              <input type="text" name="province" value="Metro Manila" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-600">
+              <input type="text" name="province" value="Metro Manila" readonly class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 readonly-field">
             </div>
           </section>
 
-          <!-- Contact Info -->
           <section class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Contact Information</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Contact Information (Non-Editable)</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                <input type="tel" name="contact_number" placeholder="09XXXXXXXXX" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition" required>
+                <input type="tel" name="contact_number" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['phone'] ?? '') ?>" readonly>
               </div>
               <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address (Optional)</label>
-                <input type="email" name="email" placeholder="you@example.com" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-green-500 transition">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input type="email" name="email" class="w-full border border-gray-300 rounded-lg px-3 py-2 readonly-field" value="<?= htmlspecialchars($resident_info['email'] ?? '') ?>" readonly>
               </div>
             </div>
           </section>
 
-          <!-- Incident Details -->
           <section class="mb-8">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 border-green-200">Incident Details</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -279,7 +281,6 @@ $conn->close();
             </div>
           </section>
 
-          <!-- Submit Button -->
           <div class="text-center">
             <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 rounded-lg shadow transition duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
               <i class="fas fa-exclamation-triangle mr-2"></i> Submit Community Report
@@ -291,12 +292,10 @@ $conn->close();
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
     &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. <br class="sm:hidden"> | Empowering Communities Digitally.
   </footer>
 
-  <!-- JavaScript -->
   <script>
     function updateTime() {
       const now = new Date();
@@ -313,70 +312,80 @@ $conn->close();
     document.addEventListener("DOMContentLoaded", function () {
       // Confirm on submit
       const form = document.getElementById('reportForm');
-      form.addEventListener('submit', function(e) {
-        if (!confirm("Are you sure you want to submit this community report? It will be reviewed by the barangay officials.")) {
-          e.preventDefault();
-        }
-      });
-    });
+      if(form){
+        form.addEventListener('submit', function(e) {
+            // File size check before confirmation
+            const fileInput = document.getElementById('evidence');
+            if (fileInput.files.length > 0) {
+                if (!validateFileSize(fileInput, true)) { // Pass true to suppress immediate alert
+                    e.preventDefault();
+                    alert("Please fix the file size issue before submitting.");
+                    return; // Stop submission
+                }
+            }
 
-    // Dropdown Toggle
-    const userMenuButton = document.getElementById('userMenuButton');
-    const userDropdown = document.getElementById('userDropdown');
-    userMenuButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userDropdown.classList.toggle('hidden');
-    });
-    document.addEventListener('click', (e) => {
-      if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-        userDropdown.classList.add('hidden');
+            if (!confirm("Are you sure you want to submit this community report? It will be reviewed by the barangay officials.")) {
+                e.preventDefault();
+            }
+        });
+      }
+
+      // Dropdown Toggle
+      const userMenuButton = document.getElementById('userMenuButton');
+      const userDropdown = document.getElementById('userDropdown');
+      if(userMenuButton && userDropdown) {
+          userMenuButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('hidden');
+          });
+          document.addEventListener('click', (e) => {
+            if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+              userDropdown.classList.add('hidden');
+            }
+          });
       }
     });
 
     // File Size Validation
-    function validateFileSize(input) {
+    function validateFileSize(input, suppressAlert = false) {
       const file = input.files[0];
       const errorElement = document.getElementById('fileError');
       
       if (!file) {
         errorElement.classList.add('hidden');
-        return;
+        return true;
       }
 
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
       
+      let isValid = true;
+      let errorMessage = '';
+
       if (isImage && file.size > 10 * 1024 * 1024) { // 10MB
-        errorElement.textContent = "Image is too large. Maximum size is 10MB.";
-        errorElement.classList.remove('hidden');
-        input.value = ""; // Clear file input
-        return false;
+        errorMessage = "Image is too large. Maximum size is 10MB.";
+        isValid = false;
       }
       
       if (isVideo && file.size > 40 * 1024 * 1024) { // 40MB
-        errorElement.textContent = "Video is too large. Maximum size is 40MB.";
+        errorMessage = "Video is too large. Maximum size is 40MB.";
+        isValid = false;
+      }
+
+      if (!isValid) {
+        errorElement.textContent = errorMessage;
         errorElement.classList.remove('hidden');
-        input.value = ""; // Clear file input
-        return false;
-      }
-
-      errorElement.classList.add('hidden');
-      return true;
-    }
-
-    // Validate before form submit
-    document.getElementById('reportForm').addEventListener('submit', function(e) {
-      const fileInput = document.getElementById('evidence');
-      if (fileInput.files.length > 0) {
-        if (!validateFileSize(fileInput)) {
-          e.preventDefault();
-          alert("Please fix the file size issue before submitting.");
+        if (!suppressAlert) {
+            input.value = ""; // Clear file input only on immediate validation
         }
+      } else {
+        errorElement.classList.add('hidden');
       }
-    });
+
+      return isValid;
+    }
   </script>
 
-  <!-- Success Alert -->
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success') && urlParams.get('success') === 'community_report') {
