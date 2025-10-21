@@ -1,2 +1,7 @@
-- [x] Edit ris_resident_registration.php: Change actions column to always show "View Details" button linking to ris_view_details.php?id=<?= $row['id'] ?>
-- [x] Create ris_view_details.php: Display resident info, uploaded images, and approve/reject buttons if status is pending.
+# TODO: Fix File Upload Replacement in ris_registration_form.php
+
+## Tasks
+- [x] Add "Change" button HTML in Valid ID upload area
+- [x] Add "Change" button HTML in Selfie upload area
+- [x] Update JavaScript for Valid ID to handle "Change" button and make preview clickable
+- [x] Update JavaScript for Selfie to handle "Change" button and make preview clickable
