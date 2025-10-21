@@ -175,22 +175,10 @@ $result = $conn->query($sql);
 
               <td class="px-4 py-2 text-xs text-gray-500"><?= htmlspecialchars($row['created_at']) ?></td>
               <td class="px-4 py-2">
-                <?php if ($row['status'] === 'pending'): ?>
-                  <div class="flex gap-2">
-                    <a href="ris_approve_reject.php?action=approve&id=<?= urlencode($row['id']) ?>"
-                       onclick="return confirm('Approve this resident? This will generate a Resident ID.');"
-                       class="inline-flex items-center px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition">
-                      <i class="fas fa-check mr-1"></i> Approve
-                    </a>
-                    <a href="ris_approve_reject.php?action=reject&id=<?= urlencode($row['id']) ?>"
-                       onclick="return confirm('Reject this resident? This cannot be undone.');"
-                       class="inline-flex items-center px-3 py-1 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition">
-                      <i class="fas fa-times mr-1"></i> Reject
-                    </a>
-                  </div>
-                <?php else: ?>
-                  <span class="text-gray-500 text-xs">No action</span>
-                <?php endif; ?>
+                <a href="ris_view_details.php?id=<?= urlencode($row['id']) ?>"
+                   class="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition">
+                  <i class="fas fa-eye mr-1"></i> View Details
+                </a>
               </td>
             </tr>
           <?php endwhile; ?>

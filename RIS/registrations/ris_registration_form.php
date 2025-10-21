@@ -9,6 +9,8 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+
+
     <script>
         tailwind.config = {
             theme: {
@@ -140,8 +142,18 @@
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Religion</label>
-                                <input type="text" name="religion"
+                                <select name="religion" id="religion_select"
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
+                                    <option value="">Select</option>
+                                    <option value="Roman Catholicism">Roman Catholicism</option>
+                                    <option value="Islam">Islam</option>
+                                    <option value="Evangelical Christianity">Evangelical Christianity</option>
+                                    <option value="Iglesia ni Cristo (INC)">Iglesia ni Cristo (INC)</option>
+                                    <option value="Aglipayan Church (Philippine Independent Church)">Aglipayan Church (Philippine Independent Church)</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <input type="text" name="other_religion" id="other_religion_input" placeholder="Specify other religion"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition mt-2 hidden">
                             </div>
                         </div>
                     </section>
@@ -177,7 +189,7 @@
                              </div>
                              <div>
                                  <label class="block text-sm font-medium text-gray-700 mb-2">Employment Status *</label>
-                                 <select name="employment_status" required
+                                 <select name="employment_status" id="employment_status_select" required
                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
                                      <option value="">Select</option>
                                      <option value="student">Student</option>
@@ -188,6 +200,8 @@
                                      <option value="homemaker">Homemaker</option>
                                      <option value="others">Others</option>
                                  </select>
+                                 <input type="text" name="other_employment" id="other_employment_input" placeholder="Specify other employment status"
+                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition mt-2 hidden">
                              </div>
                          </div>
                     </section>
@@ -196,30 +210,46 @@
                          <h2 class="text-xl font-semibold text-dark mb-6 form-section-title">Identification</h2>
                          <div class="grid md:grid-cols-2 gap-6">
                              <div>
-                                 <label class="block text-sm font-medium text-gray-700 mb-2">Valid ID Type</label>
-                                 <input type="text" name="valid_id_type" placeholder="e.g., PhilID, Driver's License"
+                                 <label class="block text-sm font-medium text-gray-700 mb-2">Valid ID Type *</label>
+                                 <select name="valid_id_type" id="valid_id_type" required
                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
+                                     <option value="">Select ID Type</option>
+                                     <option value="philid">PhilID</option>
+                                     <option value="drivers_license">Driver's License</option>
+                                     <option value="passport">Passport</option>
+                                     <option value="sss">SSS ID</option>
+                                     <option value="tin">TIN</option>
+                                     <option value="voters_id">Voter's ID</option>
+                                     <option value="prc">PRC ID</option>
+                                     <option value="other">Other</option>
+                                 </select>
+                                 <input type="text" name="other_valid_id" id="other_valid_id_input" placeholder="Specify other ID type"
+                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition mt-2 hidden">
                              </div>
                              <div>
-                                 <label class="block text-sm font-medium text-gray-700 mb-2">Valid ID Number</label>
-                                 <input type="text" name="valid_id_number"
+                                 <label class="block text-sm font-medium text-gray-700 mb-2">Valid ID Number *</label>
+                                 <input type="text" name="valid_id_number" id="valid_id_number" placeholder="Enter ID number"
                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
+                                 <span id="id_error" class="text-red-500 text-sm mt-1 hidden">Invalid ID format</span>
                              </div>
                              <div>
-                                 <label class="block text-sm font-medium text-gray-700 mb-2">Upload Valid ID (Image or PDF)</label>
+                                 <label class="block text-sm font-medium text-gray-700 mb-2">Upload Valid ID (JPG, PNG) *</label>
                                  <label class="file-upload-label">
                                      <i class="fas fa-file-upload"></i>
-                                     <span>Choose File</span>
-                                     <input type="file" name="valid_id_image" accept="image/*,application/pdf" class="hidden">
+                                     <span id="valid_id_text">Choose File</span>
+                                     <input type="file" name="valid_id_image" id="valid_id_image" accept="image/*" class="hidden">
                                  </label>
+                                 <span id="file_error" class="text-red-500 text-sm mt-1 hidden">Please upload your valid ID</span>
+
                              </div>
                              <div>
-                                 <label class="block text-sm font-medium text-gray-700 mb-2">Selfie with ID</label>
+                                 <label class="block text-sm font-medium text-gray-700 mb-2">Selfie with ID (JPG, PNG) *</label>
                                  <label class="file-upload-label">
                                      <i class="fas fa-camera"></i>
-                                     <span>Choose File</span>
-                                     <input type="file" name="selfie_with_id" accept="image/*" class="hidden">
+                                     <span id="selfie_text">Choose File</span>
+                                     <input type="file" name="selfie_with_id" id="selfie_with_id" accept="image/*" class="hidden">
                                  </label>
+                                 <span id="selfie_error" class="text-red-500 text-sm mt-1 hidden">Please upload a selfie with your ID</span>
                              </div>
                          </div>
                     </section>
@@ -278,6 +308,209 @@
             animation: fadeIn 0.5s ease-out forwards;
         }
     </style>
+
+    <script>
+        document.getElementById('religion_select').addEventListener('change', function() {
+            const otherInput = document.getElementById('other_religion_input');
+            if (this.value === 'Other') {
+                otherInput.classList.remove('hidden');
+                otherInput.required = true;
+            } else {
+                otherInput.classList.add('hidden');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        });
+
+        document.getElementById('employment_status_select').addEventListener('change', function() {
+            const otherInput = document.getElementById('other_employment_input');
+            if (this.value === 'others') {
+                otherInput.classList.remove('hidden');
+                otherInput.required = true;
+            } else {
+                otherInput.classList.add('hidden');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        });
+
+        document.getElementById('valid_id_type').addEventListener('change', function() {
+            const otherInput = document.getElementById('other_valid_id_input');
+            if (this.value === 'other') {
+                otherInput.classList.remove('hidden');
+                otherInput.required = true;
+            } else {
+                otherInput.classList.add('hidden');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        });
+
+        // ID Validator Functions
+        function validateIDNumber(idType, idNumber) {
+            const trimmedNumber = idNumber.trim();
+            switch(idType) {
+                case 'philid':
+                    return /^\d{12}$/.test(trimmedNumber);
+                case 'drivers_license':
+                    return /^[A-Z]\d{2}-\d{2}-\d{6}$/.test(trimmedNumber);
+                case 'passport':
+                    return /^[A-Z]{2}\d{7}$/.test(trimmedNumber);
+                case 'sss':
+                    return /^\d{10}$/.test(trimmedNumber);
+                case 'tin':
+                    return /^\d{9,12}$/.test(trimmedNumber);
+                case 'voters_id':
+                    return /^\d{10,12}$/.test(trimmedNumber);
+                case 'prc':
+                    return /^\d{7}$/.test(trimmedNumber);
+                case 'other':
+                    return trimmedNumber.length >= 5; // Minimum 5 characters for other IDs
+                default:
+                    return false;
+            }
+        }
+
+        function getIDFormatHint(idType) {
+            switch(idType) {
+                case 'philid':
+                    return 'Format: 12 digits (e.g., 123456789012)';
+                case 'drivers_license':
+                    return 'Format: A01-12-345678';
+                case 'passport':
+                    return 'Format: AA1234567';
+                case 'sss':
+                    return 'Format: 10 digits';
+                case 'tin':
+                    return 'Format: 9-12 digits';
+                case 'voters_id':
+                    return 'Format: 10-12 digits';
+                case 'prc':
+                    return 'Format: 7 digits';
+                case 'other':
+                    return 'Enter valid ID number (minimum 5 characters)';
+                default:
+                    return '';
+            }
+        }
+
+        // Event listeners for ID validation
+        document.getElementById('valid_id_type').addEventListener('change', function() {
+            const idNumberInput = document.getElementById('valid_id_number');
+            const idError = document.getElementById('id_error');
+            const selectedType = this.value;
+
+            if (selectedType) {
+                idNumberInput.required = true;
+                idNumberInput.placeholder = getIDFormatHint(selectedType);
+                // Validate current value if present
+                if (idNumberInput.value.trim()) {
+                    const isValid = validateIDNumber(selectedType, idNumberInput.value);
+                    if (!isValid) {
+                        idError.textContent = `Invalid ${this.options[this.selectedIndex].text} format`;
+                        idError.classList.remove('hidden');
+                    } else {
+                        idError.classList.add('hidden');
+                    }
+                } else {
+                    idError.classList.add('hidden');
+                }
+            } else {
+                idNumberInput.required = false;
+                idNumberInput.placeholder = 'Enter ID number';
+                idError.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('valid_id_number').addEventListener('input', function() {
+            const idTypeSelect = document.getElementById('valid_id_type');
+            const idError = document.getElementById('id_error');
+            const selectedType = idTypeSelect.value;
+
+            if (selectedType && this.value.trim()) {
+                const isValid = validateIDNumber(selectedType, this.value);
+                if (!isValid) {
+                    idError.textContent = `Invalid ${idTypeSelect.options[idTypeSelect.selectedIndex].text} format`;
+                    idError.classList.remove('hidden');
+                } else {
+                    idError.classList.add('hidden');
+                }
+            } else {
+                idError.classList.add('hidden');
+            }
+        });
+
+
+
+        // File upload event listeners
+        document.getElementById('valid_id_image').addEventListener('change', function() {
+            const fileText = document.getElementById('valid_id_text');
+            const fileError = document.getElementById('file_error');
+            if (this.files.length > 0) {
+                fileText.textContent = this.files[0].name;
+                fileError.classList.add('hidden');
+            } else {
+                fileText.textContent = 'Choose File';
+                fileError.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('selfie_with_id').addEventListener('change', function() {
+            const selfieText = document.getElementById('selfie_text');
+            const selfieError = document.getElementById('selfie_error');
+            if (this.files.length > 0) {
+                selfieText.textContent = this.files[0].name;
+                selfieError.classList.add('hidden');
+            } else {
+                selfieText.textContent = 'Choose File';
+                selfieError.classList.remove('hidden');
+            }
+        });
+
+        // Form submission validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const idTypeSelect = document.getElementById('valid_id_type');
+            const idNumberInput = document.getElementById('valid_id_number');
+            const idError = document.getElementById('id_error');
+            const validIdFile = document.getElementById('valid_id_image');
+            const selfieFile = document.getElementById('selfie_with_id');
+            const fileError = document.getElementById('file_error');
+            const selfieError = document.getElementById('selfie_error');
+
+            let hasError = false;
+
+            // Validate ID number
+            if (idTypeSelect.value && idNumberInput.value.trim()) {
+                const isValid = validateIDNumber(idTypeSelect.value, idNumberInput.value);
+                if (!isValid) {
+                    e.preventDefault();
+                    idError.textContent = `Invalid ${idTypeSelect.options[idTypeSelect.selectedIndex].text} format. Please check and try again.`;
+                    idError.classList.remove('hidden');
+                    idNumberInput.focus();
+                    hasError = true;
+                }
+            }
+
+            // Validate file uploads
+            if (!validIdFile.files.length) {
+                e.preventDefault();
+                fileError.textContent = 'Please upload your valid ID';
+                fileError.classList.remove('hidden');
+                hasError = true;
+            }
+
+            if (!selfieFile.files.length) {
+                e.preventDefault();
+                selfieError.textContent = 'Please upload a selfie with your ID';
+                selfieError.classList.remove('hidden');
+                hasError = true;
+            }
+
+            if (hasError) {
+                return false;
+            }
+        });
+    </script>
 
 </body>
 </html>

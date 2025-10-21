@@ -25,7 +25,7 @@ if (!empty($_FILES['valid_id_image']['name']) && $_FILES['valid_id_image']['erro
     $fileName = basename($_FILES['valid_id_image']['name']);
     $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
-    $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+    $allowed = ['jpg', 'jpeg', 'png'];
     if (in_array($fileExt, $allowed)) {
         $safeName = "valid_id_" . time() . "_" . uniqid() . "." . $fileExt;
         $targetPath = $uploadDir . $safeName;
@@ -55,6 +55,17 @@ if (!empty($_FILES['selfie_with_id']['name']) && $_FILES['selfie_with_id']['erro
             error_log("Upload failed: selfie_with_id - $safeName");
         }
     }
+}
+
+// Check if required uploads succeeded
+if (!$valid_id_image) {
+    header("Location: ris_registration_form.php?error=" . urlencode("Failed to upload valid ID image. Please try again."));
+    exit;
+}
+
+if (!$selfie_with_id) {
+    header("Location: ris_registration_form.php?error=" . urlencode("Failed to upload selfie with ID. Please try again."));
+    exit;
 }
 
 // Checkbox values
@@ -100,6 +111,18 @@ if ($stmt_check->get_result()->num_rows > 0) {
     exit;
 }
 $stmt_check->close();
+
+// Check if name already exists (first_name + middle_name + last_name combination)
+$name_check_sql = "SELECT id FROM registration WHERE first_name = ? AND last_name = ? AND COALESCE(middle_name, '') = COALESCE(?, '')";
+$stmt_name_check = $conn->prepare($name_check_sql);
+$middle_name_for_check = $middle_name ?? ''; // Use empty string if NULL for comparison
+$stmt_name_check->bind_param("sss", $first_name, $last_name, $middle_name_for_check);
+$stmt_name_check->execute();
+if ($stmt_name_check->get_result()->num_rows > 0) {
+    header("Location: ris_registration_form.php?error=" . urlencode("A resident with this name is already registered."));
+    exit;
+}
+$stmt_name_check->close();
 
 // ---- Generate next 8-digit internal ID safely (transaction + row lock) ----
 $conn->begin_transaction();

@@ -1,0 +1,2 @@
+- [x] Edit ris_resident_registration.php: Change actions column to always show "View Details" button linking to ris_view_details.php?id=<?= $row['id'] ?>
+- [x] Create ris_view_details.php: Display resident info, uploaded images, and approve/reject buttons if status is pending.
