@@ -91,7 +91,11 @@ $religion          = !empty(trim($_POST['religion'] ?? '')) ? trim($conn->real_e
 $address           = trim($conn->real_escape_string($_POST['address'] ?? ''));
 $phone             = trim($conn->real_escape_string($_POST['phone'] ?? ''));
 $resident_type     = $conn->real_escape_string($_POST['resident_type'] ?? '');
-$stay_length       = isset($_POST['stay_length']) && $_POST['stay_length'] !== '' ? (int)$_POST['stay_length'] : null;
+
+// ========== START CHANGE 1: Inalis ang (int) para makuha ang string value ==========
+$stay_length       = isset($_POST['stay_length']) && $_POST['stay_length'] !== '' ? trim($conn->real_escape_string($_POST['stay_length'])) : null;
+// ========== END CHANGE 1 ==========
+
 $employment_status = $conn->real_escape_string($_POST['employment_status'] ?? '');
 $valid_id_type     = !empty(trim($_POST['valid_id_type'] ?? '')) ? trim($conn->real_escape_string($_POST['valid_id_type'])) : null;
 $valid_id_number   = !empty(trim($_POST['valid_id_number'] ?? '')) ? trim($conn->real_escape_string($_POST['valid_id_number'])) : null;
@@ -152,8 +156,10 @@ if (!$stmt) {
 }
 
 // **UPDATED**: Bind parameters for new columns
+// ========== START CHANGE 2: Pinalitan ang 'i' (integer) ng 's' (string) para sa stay_length ==========
 $stmt->bind_param(
-    "sssssssisssssssisssssiiiiii",
+    "sssssssisssssssssssssiiiiii", 
+// ========== END CHANGE 2 ==========
     $new_internal_id, $first_name, $middle_name, $last_name, $email, $dob, $pob, $age, $gender, $civil_status,
     $nationality, $religion, $address, $phone, $resident_type, $stay_length,
     $employment_status, $valid_id_type, $valid_id_number, $valid_id_image, $selfie_with_id,

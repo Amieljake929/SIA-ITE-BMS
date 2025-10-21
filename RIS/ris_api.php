@@ -36,7 +36,7 @@ if ($apiKey !== $secretApiKey) {
 $servername = "localhost:3307";
 $username = "root";
 $password = "";
-$dbname = "ris";
+$dbname = "bms";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
@@ -164,19 +164,11 @@ function handleGetRequest($conn) {
         $stmt->close();
 
         // Check if already registered in BMS
-        $bms_conn = new mysqli("localhost:3307", "root", "", "bms");
-        if ($bms_conn->connect_error) {
-            http_response_code(500);
-            echo json_encode(["error" => "BMS connection failed"]);
-            return;
-        }
-
-        $check = $bms_conn->prepare("SELECT id FROM users WHERE email = ?");
+        $check = $conn->prepare("SELECT id FROM ris_users WHERE email = ?");
         $check->bind_param("s", $data['email']);
         $check->execute();
         $is_registered = $check->get_result()->num_rows > 0;
         $check->close();
-        $bms_conn->close();
         $data['is_registered'] = $is_registered;
 
         http_response_code(200);
@@ -225,19 +217,11 @@ function handleGetRequest($conn) {
         $stmt2->close(); // Close the second statement
 
         // Check if already registered in BMS
-        $bms_conn = new mysqli("localhost:3307", "root", "", "bms");
-        if ($bms_conn->connect_error) {
-            http_response_code(500);
-            echo json_encode(["error" => "BMS connection failed"]);
-            return;
-        }
-
-        $check = $bms_conn->prepare("SELECT id FROM users WHERE email = ?");
+        $check = $conn->prepare("SELECT id FROM ris_users WHERE email = ?");
         $check->bind_param("s", $data['email']);
         $check->execute();
         $is_registered = $check->get_result()->num_rows > 0;
         $check->close();
-        $bms_conn->close();
         $data['is_registered'] = $is_registered;
 
         http_response_code(200);
@@ -272,16 +256,12 @@ function handleGetRequest($conn) {
         $data = $result->fetch_assoc();
 
         // Check if already registered in BMS
-        $bms_conn = new mysqli("localhost:3307", "root", "", "bms");
-        if (!$bms_conn->connect_error) {
-            $check = $bms_conn->prepare("SELECT id FROM users WHERE email = ?");
-            $check->bind_param("s", $data['email']);
-            $check->execute();
-            $is_registered = $check->get_result()->num_rows > 0;
-            $check->close();
-            $bms_conn->close();
-            $data['is_registered'] = $is_registered;
-        }
+        $check = $conn->prepare("SELECT id FROM ris_users WHERE email = ?");
+        $check->bind_param("s", $data['email']);
+        $check->execute();
+        $is_registered = $check->get_result()->num_rows > 0;
+        $check->close();
+        $data['is_registered'] = $is_registered;
 
         http_response_code(200);
         echo json_encode($data);

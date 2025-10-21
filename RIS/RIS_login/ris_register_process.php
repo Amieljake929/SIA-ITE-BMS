@@ -4,7 +4,7 @@ include 'db_connect.php';
 
 
 // Get latest ID
-$result = $conn->query("SELECT MAX(id) AS max_id FROM users");
+$result = $conn->query("SELECT MAX(id) AS max_id FROM ris_users");
 $row = $result->fetch_assoc();
 
 if ($row['max_id']) {
@@ -21,7 +21,7 @@ $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // hash passwor
 $role = $_POST['role'];
 
 // Insert user
-$stmt = $conn->prepare("INSERT INTO users (id, full_name, email, password, role) VALUES (?, ?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO ris_users (id, full_name, email, password, role) VALUES (?, ?, ?, ?, ?)");
 $stmt->bind_param("sssss", $new_id, $full_name, $email, $password, $role);
 
 if ($stmt->execute()) {

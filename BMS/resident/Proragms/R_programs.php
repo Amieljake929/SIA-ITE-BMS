@@ -78,7 +78,7 @@ $conn->close();
                 </a>
               </li>
               <li>
-                <a href="../login/logout.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
+                <a href="../../login/logout.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
                   <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
                 </a>
               </li>

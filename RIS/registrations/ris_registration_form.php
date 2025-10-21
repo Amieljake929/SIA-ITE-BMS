@@ -39,6 +39,10 @@
             margin-right: 8px;
             font-size: 1.2em;
         }
+        /* Style para sa image preview */
+        .image-preview {
+            @apply mt-4 rounded-lg shadow-md hidden max-h-60 w-auto border border-gray-200;
+        }
     </style>
 </head>
 <body class="bg-light min-h-screen py-10 px-4">
@@ -182,12 +186,20 @@
                                      <option value="non-voter">Non-Voter</option>
                                  </select>
                              </div>
+
                              <div>
-                                 <label class="block text-sm font-medium text-gray-700 mb-2">Stay Length (months)</label>
-                                 <input type="number" name="stay_length" min="0"
-                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
-                             </div>
-                             <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Stay Length</label>
+                                <select name="stay_length"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
+                                    <option value="">Select Stay Length</option>
+                                    <option value="Less than 6 months">Less than 6 months</option>
+                                    <option value="6 months - 1 year">6 months - 1 year</option>
+                                    <option value="1 - 3 years">1 - 3 years</option>
+                                    <option value="3 - 5 years">3 - 5 years</option>
+                                    <option value="More than 5 years">More than 5 years</option>
+                                </select>
+                            </div>
+                            <div>
                                  <label class="block text-sm font-medium text-gray-700 mb-2">Employment Status *</label>
                                  <select name="employment_status" id="employment_status_select" required
                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition">
@@ -240,8 +252,9 @@
                                      <input type="file" name="valid_id_image" id="valid_id_image" accept="image/*" class="hidden">
                                  </label>
                                  <span id="file_error" class="text-red-500 text-sm mt-1 hidden">Please upload your valid ID</span>
-
-                             </div>
+                                 
+                                 <img id="valid_id_preview" src="#" alt="Valid ID Preview" class="image-preview"/>
+                                 </div>
                              <div>
                                  <label class="block text-sm font-medium text-gray-700 mb-2">Selfie with ID (JPG, PNG) *</label>
                                  <label class="file-upload-label">
@@ -250,7 +263,9 @@
                                      <input type="file" name="selfie_with_id" id="selfie_with_id" accept="image/*" class="hidden">
                                  </label>
                                  <span id="selfie_error" class="text-red-500 text-sm mt-1 hidden">Please upload a selfie with your ID</span>
-                             </div>
+
+                                 <img id="selfie_preview" src="#" alt="Selfie Preview" class="image-preview"/>
+                                 </div>
                          </div>
                     </section>
 
@@ -442,30 +457,60 @@
 
 
 
-        // File upload event listeners
+        // ========== START CHANGE 4: JS FOR VALID ID PREVIEW ==========
         document.getElementById('valid_id_image').addEventListener('change', function() {
             const fileText = document.getElementById('valid_id_text');
             const fileError = document.getElementById('file_error');
+            const preview = document.getElementById('valid_id_preview'); // Get preview element
+
             if (this.files.length > 0) {
                 fileText.textContent = this.files[0].name;
                 fileError.classList.add('hidden');
+
+                // Read and display image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                }
+                reader.readAsDataURL(this.files[0]);
+
             } else {
                 fileText.textContent = 'Choose File';
                 fileError.classList.remove('hidden');
+                preview.classList.add('hidden'); // Hide preview
+                preview.src = '#'; // Reset src
             }
         });
+        // ========== END CHANGE 4 ==========
 
+
+        // ========== START CHANGE 5: JS FOR SELFIE PREVIEW ==========
         document.getElementById('selfie_with_id').addEventListener('change', function() {
             const selfieText = document.getElementById('selfie_text');
             const selfieError = document.getElementById('selfie_error');
+            const preview = document.getElementById('selfie_preview'); // Get preview element
+
             if (this.files.length > 0) {
                 selfieText.textContent = this.files[0].name;
                 selfieError.classList.add('hidden');
+
+                // Read and display image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                }
+                reader.readAsDataURL(this.files[0]);
+
             } else {
                 selfieText.textContent = 'Choose File';
                 selfieError.classList.remove('hidden');
+                preview.classList.add('hidden'); // Hide preview
+                preview.src = '#'; // Reset src
             }
         });
+        // ========== END CHANGE 5 ==========
 
         // Form submission validation
         document.querySelector('form').addEventListener('submit', function(e) {
