@@ -25,7 +25,7 @@ if (!empty($_FILES['valid_id_image']['name']) && $_FILES['valid_id_image']['erro
     $fileName = basename($_FILES['valid_id_image']['name']);
     $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
-    $allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+    $allowed = ['jpg', 'jpeg', 'png'];
     if (in_array($fileExt, $allowed)) {
         $safeName = "valid_id_" . time() . "_" . uniqid() . "." . $fileExt;
         $targetPath = $uploadDir . $safeName;
@@ -55,6 +55,17 @@ if (!empty($_FILES['selfie_with_id']['name']) && $_FILES['selfie_with_id']['erro
             error_log("Upload failed: selfie_with_id - $safeName");
         }
     }
+}
+
+// Check if required uploads succeeded
+if (!$valid_id_image) {
+    header("Location: ris_registration_form.php?error=" . urlencode("Failed to upload valid ID image. Please try again."));
+    exit;
+}
+
+if (!$selfie_with_id) {
+    header("Location: ris_registration_form.php?error=" . urlencode("Failed to upload selfie with ID. Please try again."));
+    exit;
 }
 
 // Checkbox values
