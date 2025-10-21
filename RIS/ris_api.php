@@ -33,7 +33,7 @@ if ($apiKey !== $secretApiKey) {
 }
 
 // Database
-$servername = "localhost:3306";
+$servername = "localhost:3307";
 $username = "root";
 $password = "";
 $dbname = "ris";
@@ -164,7 +164,7 @@ function handleGetRequest($conn) {
         $stmt->close();
 
         // Check if already registered in BMS
-        $bms_conn = new mysqli("localhost:3306", "root", "", "bms");
+        $bms_conn = new mysqli("localhost:3307", "root", "", "bms");
         if ($bms_conn->connect_error) {
             http_response_code(500);
             echo json_encode(["error" => "BMS connection failed"]);
@@ -272,7 +272,7 @@ function handleGetRequest($conn) {
         $data = $result->fetch_assoc();
 
         // Check if already registered in BMS
-        $bms_conn = new mysqli("localhost:3306", "root", "", "bms");
+        $bms_conn = new mysqli("localhost:3307", "root", "", "bms");
         if (!$bms_conn->connect_error) {
             $check = $bms_conn->prepare("SELECT id FROM users WHERE email = ?");
             $check->bind_param("s", $data['email']);
