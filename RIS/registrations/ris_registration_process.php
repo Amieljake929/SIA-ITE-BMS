@@ -1,72 +1,16 @@
 <?php
 // ris_registration_process.php
 
+header('Content-Type: application/json');
+
 // Database connection
 include '../RIS_login/db_connect.php';
 
+// Start session for CAPTCHA
+session_start();
 
 // Set charset
 $conn->set_charset('utf8mb4');
-
-// Upload directory
-$uploadDir = __DIR__ . "/uploads/";
-if (!is_dir($uploadDir)) {
-    if (!mkdir($uploadDir, 0777, true)) {
-        die("Failed to create upload directory.");
-    }
-}
-
-$valid_id_image = null;
-$selfie_with_id = null;
-
-// Handle valid ID image upload
-if (!empty($_FILES['valid_id_image']['name']) && $_FILES['valid_id_image']['error'] === UPLOAD_ERR_OK) {
-    $fileTmp = $_FILES['valid_id_image']['tmp_name'];
-    $fileName = basename($_FILES['valid_id_image']['name']);
-    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-    $allowed = ['jpg', 'jpeg', 'png'];
-    if (in_array($fileExt, $allowed)) {
-        $safeName = "valid_id_" . time() . "_" . uniqid() . "." . $fileExt;
-        $targetPath = $uploadDir . $safeName;
-
-        if (move_uploaded_file($fileTmp, $targetPath)) {
-            $valid_id_image = "uploads/" . $safeName;
-        } else {
-            error_log("Upload failed: valid_id_image - $safeName");
-        }
-    }
-}
-
-// Handle selfie with ID upload
-if (!empty($_FILES['selfie_with_id']['name']) && $_FILES['selfie_with_id']['error'] === UPLOAD_ERR_OK) {
-    $fileTmp = $_FILES['selfie_with_id']['tmp_name'];
-    $fileName = basename($_FILES['selfie_with_id']['name']);
-    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-    $allowed = ['jpg', 'jpeg', 'png'];
-    if (in_array($fileExt, $allowed)) {
-        $safeName = "selfie_" . time() . "_" . uniqid() . "." . $fileExt;
-        $targetPath = $uploadDir . $safeName;
-
-        if (move_uploaded_file($fileTmp, $targetPath)) {
-            $selfie_with_id = "uploads/" . $safeName;
-        } else {
-            error_log("Upload failed: selfie_with_id - $safeName");
-        }
-    }
-}
-
-// Check if required uploads succeeded
-if (!$valid_id_image) {
-    header("Location: ris_registration_form.php?error=" . urlencode("Failed to upload valid ID image. Please try again."));
-    exit;
-}
-
-if (!$selfie_with_id) {
-    header("Location: ris_registration_form.php?error=" . urlencode("Failed to upload selfie with ID. Please try again."));
-    exit;
-}
 
 // Checkbox values
 $is_senior_citizen = isset($_POST['is_senior_citizen']) ? 1 : 0;
@@ -100,9 +44,18 @@ $employment_status = $conn->real_escape_string($_POST['employment_status'] ?? ''
 $valid_id_type     = !empty(trim($_POST['valid_id_type'] ?? '')) ? trim($conn->real_escape_string($_POST['valid_id_type'])) : null;
 $valid_id_number   = !empty(trim($_POST['valid_id_number'] ?? '')) ? trim($conn->real_escape_string($_POST['valid_id_number'])) : null;
 
+// CAPTCHA validation
+$captcha_code = trim($_POST['captcha_code'] ?? '');
+if (empty($captcha_code) || !isset($_SESSION['captcha_text']) || strtolower($captcha_code) !== $_SESSION['captcha_text']) {
+    echo json_encode(['success' => false, 'message' => 'Invalid CAPTCHA code. Please try again.']);
+    exit;
+}
+// Clear CAPTCHA session after successful validation
+unset($_SESSION['captcha_text']);
+
 // Validation: Required fields
 if (!$email || !$first_name || !$last_name || !$dob || !$pob || !$gender || !$civil_status || !$nationality || !$address || !$phone || !$employment_status || !$resident_type) {
-    header("Location: ris_registration_form.php?error=" . urlencode("Please fill in all required fields."));
+    echo json_encode(['success' => false, 'message' => 'Please fill in all required fields.']);
     exit;
 }
 
@@ -111,7 +64,7 @@ $stmt_check = $conn->prepare("SELECT id FROM registration WHERE email = ?");
 $stmt_check->bind_param("s", $email);
 $stmt_check->execute();
 if ($stmt_check->get_result()->num_rows > 0) {
-    header("Location: ris_registration_form.php?error=" . urlencode("Email already registered."));
+    echo json_encode(['success' => false, 'message' => 'Email already registered.']);
     exit;
 }
 $stmt_check->close();
@@ -123,10 +76,75 @@ $middle_name_for_check = $middle_name ?? ''; // Use empty string if NULL for com
 $stmt_name_check->bind_param("sss", $first_name, $last_name, $middle_name_for_check);
 $stmt_name_check->execute();
 if ($stmt_name_check->get_result()->num_rows > 0) {
-    header("Location: ris_registration_form.php?error=" . urlencode("A resident with this name is already registered."));
+    echo json_encode(['success' => false, 'message' => 'A resident with this name is already registered.']);
     exit;
 }
 $stmt_name_check->close();
+
+// Upload directory
+$uploadDir = __DIR__ . "/uploads/";
+if (!is_dir($uploadDir)) {
+    if (!mkdir($uploadDir, 0777, true)) {
+        die("Failed to create upload directory.");
+    }
+}
+
+$valid_id_image = null;
+$selfie_with_id = null;
+
+// Handle valid ID image upload
+if (!empty($_FILES['valid_id_image']['name']) && $_FILES['valid_id_image']['error'] === UPLOAD_ERR_OK) {
+    $fileTmp = $_FILES['valid_id_image']['tmp_name'];
+    $fileName = basename($_FILES['valid_id_image']['name']);
+    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+    $allowed = ['jpg', 'jpeg', 'png'];
+    if (in_array($fileExt, $allowed)) {
+        $safeName = "valid_id_" . time() . "_" . uniqid() . "." . $fileExt;
+        $targetPath = $uploadDir . $safeName;
+
+        if (move_uploaded_file($fileTmp, $targetPath)) {
+            $valid_id_image = "uploads/" . $safeName;
+        } else {
+            error_log("Upload failed: valid_id_image - $safeName");
+            echo json_encode(['success' => false, 'message' => 'Failed to upload valid ID image. Please try again.']);
+            exit;
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid file type for valid ID image. Only JPG, PNG allowed.']);
+        exit;
+    }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Valid ID image is required.']);
+    exit;
+}
+
+// Handle selfie with ID upload
+if (!empty($_FILES['selfie_with_id']['name']) && $_FILES['selfie_with_id']['error'] === UPLOAD_ERR_OK) {
+    $fileTmp = $_FILES['selfie_with_id']['tmp_name'];
+    $fileName = basename($_FILES['selfie_with_id']['name']);
+    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+    $allowed = ['jpg', 'jpeg', 'png'];
+    if (in_array($fileExt, $allowed)) {
+        $safeName = "selfie_" . time() . "_" . uniqid() . "." . $fileExt;
+        $targetPath = $uploadDir . $safeName;
+
+        if (move_uploaded_file($fileTmp, $targetPath)) {
+            $selfie_with_id = "uploads/" . $safeName;
+        } else {
+            error_log("Upload failed: selfie_with_id - $safeName");
+            echo json_encode(['success' => false, 'message' => 'Failed to upload selfie with ID. Please try again.']);
+            exit;
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid file type for selfie image. Only JPG, PNG allowed.']);
+        exit;
+    }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Selfie with ID is required.']);
+    exit;
+}
 
 // ---- Generate next 8-digit internal ID safely (transaction + row lock) ----
 $conn->begin_transaction();
@@ -151,14 +169,14 @@ $sql = "INSERT INTO registration (
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
     $conn->rollback();
-    header("Location: ris_registration_form.php?error=" . urlencode("Prepare failed: " . $conn->error));
+    echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $conn->error]);
     exit;
 }
 
 // **UPDATED**: Bind parameters for new columns
 // ========== START CHANGE 2: Pinalitan ang 'i' (integer) ng 's' (string) para sa stay_length ==========
 $stmt->bind_param(
-    "sssssssisssssssssssssiiiiii", 
+    "sssssssisssssssssssssiiiiii",
 // ========== END CHANGE 2 ==========
     $new_internal_id, $first_name, $middle_name, $last_name, $email, $dob, $pob, $age, $gender, $civil_status,
     $nationality, $religion, $address, $phone, $resident_type, $stay_length,
@@ -169,11 +187,11 @@ $stmt->bind_param(
 // Execute and redirect
 if ($stmt->execute()) {
     $conn->commit();
-    header("Location: ris_registration_form.php?success=" . urlencode("Registration successful! Your application is pending approval."));
+    echo json_encode(['success' => true, 'message' => 'Registration successful! Your application is pending approval.']);
 } else {
     $conn->rollback();
     error_log("Insert failed: " . $stmt->error);
-    header("Location: ris_registration_form.php?error=" . urlencode("Database error: " . $stmt->error));
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $stmt->error]);
 }
 
 $stmt->close();
