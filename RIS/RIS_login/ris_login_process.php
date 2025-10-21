@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = trim($_POST['password']);
 
     // Prepare and execute query
-    $stmt = $conn->prepare("SELECT id, full_name, email, password, role FROM users WHERE email = ?");
+    $stmt = $conn->prepare("SELECT id, full_name, email, password, role FROM ris_users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $stmt->store_result();
