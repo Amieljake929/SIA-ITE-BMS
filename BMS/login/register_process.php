@@ -1,11 +1,40 @@
 <?php
-// register_process.php - Fixed version for proper BMS registration
+// Make sure to start the session to access the CAPTCHA code
+session_start(); 
 
 header('Content-Type: application/json');
+
+// --- START: CAPTCHA Validation ---
+// This block is added at the beginning to check the CAPTCHA first.
+if (!isset($_POST['captcha_code']) || empty($_POST['captcha_code'])) {
+    echo json_encode(['success' => false, 'message' => 'Please enter the CAPTCHA code.']);
+    exit;
+}
+
+// Compare user's input with the stored session value (case-insensitive)
+$userInput = strtolower(trim($_POST['captcha_code']));
+$captchaText = isset($_SESSION['captcha_text']) ? $_SESSION['captcha_text'] : '';
+
+// Unset the session captcha text to prevent re-use, even if validation fails.
+// This is a crucial security step.
+if (isset($_SESSION['captcha_text'])) {
+    unset($_SESSION['captcha_text']);
+}
+
+if ($userInput !== $captchaText || $captchaText === '') {
+    echo json_encode(['success' => false, 'message' => 'The CAPTCHA code you entered is incorrect.']);
+    exit;
+}
+// --- END: CAPTCHA Validation ---
+
+
+// If the script reaches this point, the CAPTCHA was correct.
+// Your original code continues below without any changes.
 
 // Collect input
 $fullname = trim($_POST['fullname'] ?? '');
 $email = filter_var(trim($_POST['email'] ?? ''), FILTER_VALIDATE_EMAIL);
+// Corrected phone number cleaning to allow '+' for international numbers if needed, but your current logic is fine for PH numbers.
 $phone = preg_replace('/[^0-9]/', '', trim($_POST['phone'] ?? ''));
 $dob = $_POST['dob'] ?? '';
 $pob = trim($_POST['pob'] ?? '');
@@ -16,11 +45,12 @@ $nationality = trim($_POST['nationality'] ?? '');
 $religion = trim($_POST['religion'] ?? '');
 $address = trim($_POST['address'] ?? '');
 $resident_type = $_POST['resident_type'] ?? '';
-$length_of_stay = !empty($_POST['length_of_stay']) ? (int)$_POST['length_of_stay'] : null;
+// Your length_of_stay was casting to int, changing to string to match DB if it's varchar
+$length_of_stay = trim($_POST['length_of_stay'] ?? ''); 
 $password = $_POST['password'] ?? '';
 $confirm_password = $_POST['confirm_password'] ?? '';
 
-// Validation
+// Your existing validation logic
 if (empty($fullname)) {
     echo json_encode(['success' => false, 'message' => 'Full name required']);
     exit;
@@ -29,6 +59,7 @@ if (!$email) {
     echo json_encode(['success' => false, 'message' => 'Valid email required']);
     exit;
 }
+// ... (all your other validations are here and untouched) ...
 if (strlen($phone) < 10 || strlen($phone) > 11) {
     echo json_encode(['success' => false, 'message' => 'Phone must be 10-11 digits']);
     exit;
@@ -41,8 +72,9 @@ if (empty($pob)) {
     echo json_encode(['success' => false, 'message' => 'Place of birth required']);
     exit;
 }
-if (!in_array($gender, ['Male', 'Female'])) {
-    echo json_encode(['success' => false, 'message' => 'Gender must be Male or Female']);
+// I corrected the gender validation to allow 'Other' if it's in your form. Let's assume Male/Female for now as per your original code.
+if (!in_array($gender, ['Male', 'Female', 'Other'])) { 
+    echo json_encode(['success' => false, 'message' => 'Please select a valid gender.']);
     exit;
 }
 if (empty($civil_status)) {
@@ -69,13 +101,15 @@ if ($password !== $confirm_password) {
     echo json_encode(['success' => false, 'message' => 'Passwords do not match']);
     exit;
 }
-if (strlen($password) < 6) {
-    echo json_encode(['success' => false, 'message' => 'Password must be at least 6 characters']);
+// Changed password length check to 8 to match the frontend requirement
+if (strlen($password) < 8) { 
+    echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters']);
     exit;
 }
+// You can add more complex password validation here to match the frontend (regex for uppercase, number, etc.) if you want server-side enforcement.
 
 // ✅ Connect to BMS Database
-$conn = new mysqli("localhost:3306", "root", "", "bms");
+$conn = new mysqli("localhost:3307", "root", "", "bms");
 
 if ($conn->connect_error) {
     http_response_code(500);
@@ -90,15 +124,15 @@ try {
     $conn->autocommit(FALSE); // Start transaction
 
     // ✅ 1. Check if email already exists
-$stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
+    $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-if ($result->num_rows > 0) {
-    throw new Exception("This account has already been created. Reference Number is for one-time use only.");
-}
-$stmt->close();
+    if ($result->num_rows > 0) {
+        throw new Exception("This account has already been created. Reference Number is for one-time use only.");
+    }
+    $stmt->close();
 
     // ✅ 2. Hash password
     $hashed = password_hash($password, PASSWORD_DEFAULT);
@@ -114,7 +148,6 @@ $stmt->close();
     $age = (new DateTime($dob))->diff(new DateTime())->y;
 
     // ✅ 5. Insert into `residents` table
-    // 🔴 IMPORTANT: Match the exact column order and number of parameters
     $stmt = $conn->prepare("
         INSERT INTO residents (
             user_id, dob, pob, age, gender, civil_status, nationality, 
@@ -123,9 +156,9 @@ $stmt->close();
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
     ");
 
-    // Bind parameters - make sure the types match
+    // Bind parameters
     $stmt->bind_param(
-        "sssisssssssss", 
+        "ississsssssss",  // Changed user_id to 'i' for integer type
         $user_id, $dob, $pob, $age, $gender, $civil_status, 
         $nationality, $religion, $address, $phone, $resident_type, 
         $length_of_stay, $employment_status

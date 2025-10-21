@@ -8,6 +8,36 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Staff') {
 // Database connection
 include '../login/db_connect.php';
 
+// Get notification counts
+$request_count = 0;
+$tables = ['barangay_clearance', 'business_permit', 'certificate_of_residency', 'certificate_of_indigency', 'cedula', 'solo_parents', 'first_time_job_seekers'];
+foreach ($tables as $table) {
+    $sql = "SELECT COUNT(*) as count FROM `$table` WHERE status = 'Pending'";
+    $result = $conn->query($sql);
+    if ($result) {
+        $row = $result->fetch_assoc();
+        $request_count += $row['count'];
+    }
+}
+
+$blotter_count = 0;
+$sql = "SELECT COUNT(*) as count FROM blotter_and_reports WHERE status = 'Pending'";
+$result = $conn->query($sql);
+if ($result) {
+    $row = $result->fetch_assoc();
+    $blotter_count = $row['count'];
+}
+
+$community_count = 0;
+$sql = "SELECT COUNT(*) as count FROM community_reports WHERE status IN ('Pending')";
+$result = $conn->query($sql);
+if ($result) {
+    $row = $result->fetch_assoc();
+    $community_count = $row['count'];
+}
+
+$total_notifications = $request_count + $blotter_count + $community_count;
+
 $conn->close();
 ?>
 
@@ -116,31 +146,64 @@ $conn->close();
   <header class="bg-white shadow-lg border-b border-green-100 px-6 py-4 relative">
     <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <h1 class="text-xl font-bold text-green-800">BagbagCare | Staff</h1>
-      <div class="flex items-center space-x-4"></div>
+      <div class="flex items-center space-x-4">
+        <!-- Notification Bell -->
+        <div class="relative">
+          <button id="notificationBell" class="relative text-gray-600 hover:text-green-600 transition-colors duration-200 focus:outline-none">
+            <i class="fas fa-bell text-xl"></i>
+            <?php if ($total_notifications > 0): ?>
+              <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                <?= $total_notifications ?>
+              </span>
+            <?php endif; ?>
+          </button>
 
-      <!-- User Info with Dropdown -->
-      <div class="relative inline-block text-right">
-        <button id="userMenuButton" class="flex items-center font-medium cursor-pointer text-sm focus:outline-none whitespace-nowrap">
-          <span class="text-gray-800">Logged in:</span>
-          <span class="text-blue-700 ml-1">
-            <?php echo htmlspecialchars($_SESSION['full_name']); ?>
-          </span>
-          <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
-        </button>
+          <!-- Notification Dropdown -->
+          <div id="notificationDropdown" class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-20">
+            <div class="p-4">
+              <h3 class="text-sm font-semibold text-gray-800 mb-2">Notifications</h3>
+              <ul class="space-y-2 text-sm">
+                <li class="flex justify-between">
+                  <span>Request Documents:</span>
+                  <span class="font-bold text-blue-600"><?= $request_count ?></span>
+                </li>
+                <li class="flex justify-between">
+                  <span>Blotter & Reports:</span>
+                  <span class="font-bold text-blue-600"><?= $blotter_count ?></span>
+                </li>
+                <li class="flex justify-between">
+                  <span>Community Reports:</span>
+                  <span class="font-bold text-blue-600"><?= $community_count ?></span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
-        <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-10">
-          <ul class="py-2 text-sm">
-            <li>
-              <a href="#" class="block px-5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-800 transition-colors duration-150 flex items-center">
-                <i class="fas fa-user text-green-600 mr-3"></i> Profile
-              </a>
-            </li>
-            <li>
-              <a href="../login/logout_official.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
-                <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
-              </a>
-            </li>
-          </ul>
+        <!-- User Info with Dropdown -->
+        <div class="relative inline-block text-right">
+          <button id="userMenuButton" class="flex items-center font-medium cursor-pointer text-sm focus:outline-none whitespace-nowrap">
+            <span class="text-gray-800">Logged in:</span>
+            <span class="text-blue-700 ml-1">
+              <?php echo htmlspecialchars($_SESSION['full_name']); ?>
+            </span>
+            <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
+          </button>
+
+          <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-10">
+            <ul class="py-2 text-sm">
+              <li>
+                <a href="#" class="block px-5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-800 transition-colors duration-150 flex items-center">
+                  <i class="fas fa-user text-green-600 mr-3"></i> Profile
+                </a>
+              </li>
+              <li>
+                <a href="../login/logout_official.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
+                  <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -373,6 +436,21 @@ $conn->close();
     document.addEventListener('click', (e) => {
       if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
         userDropdown.classList.add('hidden');
+      }
+    });
+
+    // Notification Dropdown Toggle
+    const notificationBell = document.getElementById('notificationBell');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+
+    notificationBell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      notificationDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!notificationBell.contains(e.target) && !notificationDropdown.contains(e.target)) {
+        notificationDropdown.classList.add('hidden');
       }
     });
   </script>
