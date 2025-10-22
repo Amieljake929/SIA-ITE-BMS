@@ -52,7 +52,13 @@
                      class="absolute inset-0 w-full h-full object-cover" alt="Team working">
                 
                 <div class="absolute inset-0 bg-primary/70 bg-gradient-to-r from-primary/80 to-accent/70"></div>
-    
+
+                <div class="absolute top-4 left-4 z-10">
+                    <a href="/SIA-ITE-BMS/BMS/login/website2.php" class="text-white hover:text-green-100 text-sm font-medium flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Website
+                    </a>
+                </div>
+
                 <div class="absolute inset-0 flex flex-col items-center justify-center p-8 text-white text-center">
                     <h1 class="text-3xl sm:text-4xl font-bold">
                         Resident Registration
