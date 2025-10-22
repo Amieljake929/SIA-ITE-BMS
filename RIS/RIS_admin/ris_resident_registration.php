@@ -91,7 +91,7 @@ $result = $conn->query($sql);
     <div class="flex flex-col sm:flex-row gap-4 mb-6">
   <div class="flex-1">
     <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-    <input type="text" id="searchInput" placeholder="Search by name, email, phone, address..." 
+    <input type="text" id="searchInput" placeholder="Search by name..."
            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
   </div>
 
@@ -122,18 +122,6 @@ $result = $conn->query($sql);
           <th class="px-4 py-2">Birth Place</th>
           <th class="px-4 py-2">Civil Status</th>
           <th class="px-4 py-2">Nationality</th>
-          <th class="px-4 py-2">Address</th>
-          <th class="px-4 py-2">Phone</th>
-          <th class="px-4 py-2">Email</th>
-          <th class="px-4 py-2">Employment</th>
-          
-          <th class="px-4 py-2">Senior</th>
-          <th class="px-4 py-2">PWD</th>
-          <th class="px-4 py-2">Solo Parent</th>
-          <th class="px-4 py-2">Voter</th>
-          <th class="px-4 py-2">Student</th>
-          <th class="px-4 py-2">Indigenous</th>
-          
           <th class="px-4 py-2">Created</th>
           <th class="px-4 py-2">Actions</th>
         </tr>
@@ -161,18 +149,6 @@ $result = $conn->query($sql);
               <td class="px-4 py-2"><?= htmlspecialchars($row['pob']) ?></td>
               <td class="px-4 py-2"><?= htmlspecialchars($row['civil_status']) ?></td>
               <td class="px-4 py-2"><?= htmlspecialchars($row['nationality']) ?></td>
-              <td class="px-4 py-2"><?= htmlspecialchars($row['address']) ?></td>
-              <td class="px-4 py-2"><?= htmlspecialchars($row['phone']) ?></td>
-              <td class="px-4 py-2"><?= htmlspecialchars($row['email']) ?></td>
-              <td class="px-4 py-2"><?= htmlspecialchars($row['employment_status']) ?></td>
-
-              <td class="px-4 py-2 text-center"><?= $row['is_senior_citizen'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
-              <td class="px-4 py-2 text-center"><?= $row['is_pwd'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
-              <td class="px-4 py-2 text-center"><?= $row['is_solo_parent'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
-              <td class="px-4 py-2 text-center"><?= $row['is_voter'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
-              <td class="px-4 py-2 text-center"><?= $row['is_student'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
-              <td class="px-4 py-2 text-center"><?= $row['is_indigenous'] ? '<i class="fas fa-check text-green-600"></i>' : '<i class="fas fa-times text-gray-400"></i>' ?></td>
-
               <td class="px-4 py-2 text-xs text-gray-500"><?= htmlspecialchars($row['created_at']) ?></td>
               <td class="px-4 py-2">
                 <a href="ris_view_details.php?id=<?= urlencode($row['id']) ?>"
@@ -184,7 +160,7 @@ $result = $conn->query($sql);
           <?php endwhile; ?>
         <?php else: ?>
           <tr>
-            <td colspan="20" class="px-4 py-6 text-center text-gray-500">No residents registered yet.</td>
+            <td colspan="10" class="px-4 py-6 text-center text-gray-500">No residents registered yet.</td>
           </tr>
         <?php endif; ?>
       </tbody>
@@ -229,15 +205,9 @@ $result = $conn->query($sql);
 
      tableRows.forEach(row => {
        const name = row.dataset.name || '';
-       const email = row.dataset.email || '';
-       const phone = row.dataset.phone || '';
-       const address = row.dataset.address || '';
        const status = row.dataset.status || '';
 
-       const matchesSearch = name.includes(searchInput) ||
-                             email.includes(searchInput) ||
-                             phone.includes(searchInput) ||
-                             address.includes(searchInput);
+       const matchesSearch = name.includes(searchInput);
 
        const matchesStatus = statusFilter === 'all' || status === statusFilter;
 
