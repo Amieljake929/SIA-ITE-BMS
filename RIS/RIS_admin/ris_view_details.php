@@ -200,8 +200,7 @@ $stmt->close();
                  class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition">
                 <i class="fas fa-check mr-2"></i> Approve
               </a>
-              <a href="ris_approve_reject.php?action=reject&id=<?= urlencode($row['id']) ?>"
-                 onclick="return confirm('Reject this resident? This cannot be undone.');"
+              <a href="ris_reject_form.php?id=<?= urlencode($row['id']) ?>"
                  class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition">
                 <i class="fas fa-times mr-2"></i> Reject
               </a>
@@ -226,7 +225,7 @@ $stmt->close();
     updateTime();
 
     const userMenuButton = document.getElementById('userMenuButton');
-    const userDropdown = document.getElementById('userDropdown');
+    const userDropdown = document.getUserDropdown('userDropdown');
     userMenuButton.addEventListener('click', (e) => {
       e.stopPropagation();
       userDropdown.classList.toggle('hidden');

@@ -1,16 +1,16 @@
-# TODO: Remove Specified Columns from Resident Registration Table
+# TODO: Implement Rejection Notification and Archive for Resident Registrations
 
-## Tasks
-- [x] Update table header (thead): Remove th elements for Address, Phone, Email, Employment, Senior, PWD, Solo Parent, Voter, Student, Indigenous. Keep Created and Actions.
-- [x] Update table body (tbody): Remove corresponding td elements for removed columns, keep Created and Actions.
-- [x] Update no data row: Change colspan to 10.
-- [x] Update search input: Change placeholder to "Search by name..." and remove data-email, data-phone, data-address attributes from tr elements.
-- [x] Update filterTable script: Remove email, phone, address checks in matchesSearch.
+## Steps to Complete
 
-## Dependent Files
-- RIS/RIS_admin/ris_resident_registration.php
-
-## Followup Steps
-- [x] Verify the table displays correctly with the remaining columns.
-- [x] Test search functionality (now only by name).
-- [x] Ensure no errors in PHP or JavaScript.
+- [x] Create `registration_archive` table with same columns as `registration` plus `remarks` (TEXT) and `rejected_at` (TIMESTAMP)
+- [x] Create `send_rejection_email.php` function to send rejection emails with remarks and resubmission instructions
+- [x] Create `ris_reject_form.php` page to input remarks before rejecting
+- [x] Modify `ris_view_details.php` to link reject to the new form instead of direct action
+- [x] Modify `ris_approve_reject.php` to handle rejection with remarks: move record to archive, send email, delete from registration
+- [x] Update `ris_resident_registration.php` to exclude moved records (archived)
+- [x] Test rejection flow: input remarks, send email, move to archive
+- [x] Verify archived records are not shown in main list
+- [x] Ensure images and data integrity during move
+- [x] Add "View Archive" button to ris_resident_registration.php
+- [x] Create ris_registration_archive.php page to display archived registrations
+- [x] Create ris_archive_details.php page to view archived registration details

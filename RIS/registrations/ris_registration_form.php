@@ -60,6 +60,7 @@
                 </div>
 
                 <div class="absolute inset-0 flex flex-col items-center justify-center p-8 text-white text-center">
+                    <img src="../images/Bagbag.png" alt="Barangay Bagbag Logo" class="w-20 h-20 mb-4">
                     <h1 class="text-3xl sm:text-4xl font-bold">
                         Resident Registration
                     </h1>

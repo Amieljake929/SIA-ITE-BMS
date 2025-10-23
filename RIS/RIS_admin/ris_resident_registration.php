@@ -11,9 +11,10 @@ include '../RIS_login/db_connect.php';
 
 // UPDATED: Get residents data and construct full_name using CONCAT_WS
 $sql = "
-    SELECT *, 
-           CONCAT_WS(' ', first_name, middle_name, last_name) AS full_name 
-    FROM registration 
+    SELECT *,
+           CONCAT_WS(' ', first_name, middle_name, last_name) AS full_name
+    FROM registration
+    WHERE status != 'rejected' OR status IS NULL
     ORDER BY created_at DESC
 ";
 $result = $conn->query($sql);
@@ -42,7 +43,7 @@ $result = $conn->query($sql);
 
   <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
         <div class="flex items-center space-x-4">
-            <button 
+            <button
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
                 onclick="window.location.href='ris_admin_dashboard.php'"
                 title="Home"
@@ -52,6 +53,8 @@ $result = $conn->query($sql);
 
             <h1 class="text-xl font-bold text-green-800">Resident Registration</h1>
         </div>
+
+
 
       <div class="relative inline-block text-right">
         <button id="userMenuButton" class="flex items-center font-medium cursor-pointer text-sm focus:outline-none whitespace-nowrap">
@@ -134,11 +137,11 @@ $result = $conn->query($sql);
                 data-phone="<?= htmlspecialchars(strtolower($row['phone'])) ?>"
                 data-address="<?= htmlspecialchars(strtolower($row['address'])) ?>"
                 data-status="<?= htmlspecialchars($row['status']) ?>">
-              
+
               <td class="px-4 py-2 font-mono text-xs"><?= htmlspecialchars($row['id']) ?></td>
               <td class="px-4 py-2">
                 <span class="px-2 py-1 rounded-full text-xs font-medium
-                  <?= $row['status'] === 'approved' ? 'bg-green-100 text-green-800' : 
+                  <?= $row['status'] === 'approved' ? 'bg-green-100 text-green-800' :
                       ($row['status'] === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') ?>">
                   <?= ucfirst(htmlspecialchars($row['status'])) ?>
                 </span>
@@ -168,7 +171,7 @@ $result = $conn->query($sql);
   </div>
 </div>
   </main>
-  
+
 
   <footer class="bg-green-900 text-white text-center py-5 text-sm mt-auto">
     &copy; <?= date('Y') ?> Bagbag eServices. All rights reserved. | Empowering Communities Digitally.
