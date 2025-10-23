@@ -184,11 +184,11 @@ include '../RIS_login/db_connect.php';
       </a>
 
       <!-- Card 2 -->
-      <a href="#" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
-        <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
-          <i class="fas fa-phone-alt"></i>
+      <a href="ris_archive_password.php" class="card-container group bg-red-50 border border-red-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+        <div class="text-red-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
+          <i class="fas fa-archive"></i>
         </div>
-        <h3 class="text-base sm:text-lg font-semibold text-gray-800">Emergency Contact</h3>
+        <h3 class="text-base sm:text-lg font-semibold text-red-800">Archive Registration</h3>
       </a>
 
       <!-- Card 3 -->

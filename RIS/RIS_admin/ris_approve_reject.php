@@ -14,8 +14,8 @@ include '../RIS_login/db_connect.php';
 $conn->set_charset('utf8mb4');
 
 // Get action and ID
-$action = $_GET['action'] ?? '';
-$id = $_GET['id'] ?? '';
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+$id = $_POST['id'] ?? $_GET['id'] ?? '';
 
 if (!in_array($action, ['approve', 'reject']) || !$id) {
     $_SESSION['message'] = "Invalid action or ID.";
@@ -29,11 +29,11 @@ try {
     // **UPDATED**: Check if registration exists and is still pending
     // We now construct the full_name using CONCAT_WS
     $stmt = $conn->prepare("
-        SELECT id, 
-               CONCAT_WS(' ', first_name, middle_name, last_name) AS full_name, 
-               email, 
-               status 
-        FROM registration 
+        SELECT id,
+               CONCAT_WS(' ', first_name, middle_name, last_name) AS full_name,
+               email,
+               status
+        FROM registration
         WHERE id = ? FOR UPDATE
     ");
     $stmt->bind_param("s", $id);
@@ -87,15 +87,51 @@ try {
         } else {
             $_SESSION['message'] .= " | ❌ Failed to send email.";
         }
-    } 
+    }
     elseif ($action === 'reject') {
-        // Update status to rejected
-        $stmt4 = $conn->prepare("UPDATE registration SET status = 'rejected' WHERE id = ?");
-        $stmt4->bind_param("s", $id);
-        $stmt4->execute();
-        $stmt4->close();
+        // Get remarks from POST data
+        $remarks = trim($_POST['remarks'] ?? '');
+        if (empty($remarks)) {
+            throw new Exception("Remarks are required for rejection.");
+        }
 
-        $_SESSION['message'] = "❌ Resident rejected.";
+        // Construct full name
+        $full_name = $reg['full_name'];
+
+        // Move record to archive table
+        $stmt_archive = $conn->prepare("INSERT INTO registration_archive (
+            id, status, first_name, middle_name, last_name, email, dob, pob, age, gender, civil_status,
+            nationality, religion, address, phone, resident_type, stay_length,
+            employment_status, valid_id_type, valid_id_number, valid_id_image, selfie_with_id,
+            is_senior_citizen, is_pwd, is_solo_parent, is_voter, is_student, is_indigenous,
+            created_at, remarks
+        ) SELECT
+            id, 'rejected', first_name, middle_name, last_name, email, dob, pob, age, gender, civil_status,
+            nationality, religion, address, phone, resident_type, stay_length,
+            employment_status, valid_id_type, valid_id_number, valid_id_image, selfie_with_id,
+            is_senior_citizen, is_pwd, is_solo_parent, is_voter, is_student, is_indigenous,
+            created_at, ?
+        FROM registration WHERE id = ?");
+        $stmt_archive->bind_param("ss", $remarks, $id);
+        $stmt_archive->execute();
+        $stmt_archive->close();
+
+        // Delete from registration table
+        $stmt_delete = $conn->prepare("DELETE FROM registration WHERE id = ?");
+        $stmt_delete->bind_param("s", $id);
+        $stmt_delete->execute();
+        $stmt_delete->close();
+
+        // Send rejection email
+        require_once 'send_rejection_email.php';
+        $emailSent = sendRejectionEmail($reg['email'], $full_name, $remarks);
+
+        $_SESSION['message'] = "❌ Resident rejected and archived.";
+        if ($emailSent) {
+            $_SESSION['message'] .= " | ✉️ Rejection email sent.";
+        } else {
+            $_SESSION['message'] .= " | ❌ Failed to send email.";
+        }
     }
 
     $conn->commit();
