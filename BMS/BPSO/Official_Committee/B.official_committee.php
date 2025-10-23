@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Resident') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'BPSO') {
     header("Location: login.php");
     exit();
 }
@@ -16,7 +16,7 @@ $conn->close();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BagbagCare - Resident Portal</title>
+  <title>BagbagCare - BPSO Portal</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -43,7 +43,7 @@ $conn->close();
         <div class="flex items-center space-x-4">
             <button 
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500 text-gray-800 hover:bg-yellow-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-300"
-                onclick="window.location.href='../resident_dashboard.php'"
+                onclick="window.location.href='../BPSO_dashboard.php'"
                 title="Home"
             >
                 <i class="fas fa-home text-white" style="font-size: 1.2rem;"></i>
@@ -71,7 +71,7 @@ $conn->close();
               </a>
             </li>
             <li>
-              <a href="../login/logout.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
+              <a href="../../login/logout_official.php" class="block px-5 py-2 text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150 flex items-center">
                 <i class="fas fa-sign-out-alt text-red-600 mr-3"></i> Logout
               </a>
             </li>

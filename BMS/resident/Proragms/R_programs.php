@@ -92,33 +92,33 @@ $conn->close();
   <main class="container mx-auto px-6 py-8 w-full max-w-7xl">
 
     <section class="bg-white rounded-2xl shadow-lg p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-gray-800 flex items-center">
-          <i class="fa-solid fa-photo-film mr-2 text-green-700"></i> Programs
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+          <i class="fa-solid fa-bullhorn mr-3 text-green-700"></i> Announcements
         </h2>
-        <p class="text-xs text-gray-500"><?php echo count($images); ?> image(s)</p>
+        <p class="text-sm text-gray-500"><?php echo count($images); ?> announcement(s)</p>
       </div>
 
       <?php if (empty($images)): ?>
-        <div class="text-gray-500 text-sm">No images available yet.</div>
+        <div class="text-gray-500 text-sm">No announcements available yet.</div>
       <?php else: ?>
-        <!-- Responsive grid, square thumbs; image fits via object-cover (works for portrait/landscape) -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <!-- Responsive grid for announcement cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <?php foreach ($images as $img): ?>
-            <div class="group relative rounded-xl overflow-hidden shadow hover:shadow-lg transition">
+            <div class="group bg-gray-50 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200">
               <button type="button" class="w-full text-left" onclick="openViewer('<?php echo htmlspecialchars($img['public_src']); ?>','<?php echo htmlspecialchars($img['file_name']); ?>')">
-                <div class="relative pt-[100%] bg-gray-100">
+                <div class="relative pt-[60%] bg-gray-100">
                   <img
                     src="<?php echo htmlspecialchars($img['public_src']); ?>"
-                    alt="program image"
+                    alt="announcement image"
                     class="absolute inset-0 w-full h-full object-cover" loading="lazy" />
                 </div>
-                <div class="px-3 py-2">
-                  <div class="text-xs text-gray-700 truncate" title="<?php echo htmlspecialchars($img['file_name']); ?>">
+                <div class="p-4">
+                  <h3 class="text-sm font-semibold text-gray-800 mb-2 line-clamp-2" title="<?php echo htmlspecialchars($img['file_name']); ?>">
                     <?php echo htmlspecialchars($img['file_name']); ?>
-                  </div>
-                  <div class="text-[11px] text-gray-400">
-                    <?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($img['created_at']))); ?>
+                  </h3>
+                  <div class="text-xs text-gray-500">
+                    <i class="fa-solid fa-calendar-days mr-1"></i><?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($img['created_at']))); ?>
                   </div>
                 </div>
               </button>

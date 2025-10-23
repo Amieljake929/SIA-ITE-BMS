@@ -185,7 +185,7 @@ $conn->close();
       </a>
 
       <!-- Card 2 -->
-      <a href="#" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
+      <a href="Emergency_Contact/emergency_contacts.php" class="card-container group bg-white border border-gray-200 p-5 rounded-xl shadow hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center h-44">
         <div class="text-green-600 mb-3 text-4xl group-hover:scale-110 transition-transform duration-300">
           <i class="fas fa-phone-alt"></i>
         </div>
