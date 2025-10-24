@@ -104,11 +104,17 @@ if ($method === 'DELETE') {
   $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
   if ($id <= 0) out(['ok'=>false,'error'=>'Invalid id'], 400);
 
+  // First, copy the user to archive table
+  $stmt = $conn->prepare("INSERT INTO users_archive SELECT * FROM users WHERE id = ?");
+  $stmt->bind_param('i', $id);
+  if (!$stmt->execute()) out(['ok'=>false, 'error'=>'Archive failed'], 500);
+
+  // Then delete from users table
   $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
   $stmt->bind_param('i', $id);
   if (!$stmt->execute()) out(['ok'=>false, 'error'=>'Delete failed'], 500);
 
-  out(['ok'=>true, 'deleted'=>1]);
+  out(['ok'=>true, 'archived_and_deleted'=>1]);
 }
 
 out(['ok'=>false,'error'=>'Method not allowed'], 405);

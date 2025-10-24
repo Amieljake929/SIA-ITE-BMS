@@ -1,16 +1,16 @@
-# TODO: Implement Rejection Notification and Archive for Resident Registrations
+# TODO: Enhance Account Management with Alerts, Password Strength, and CAPTCHA
 
-## Steps to Complete
-
-- [x] Create `registration_archive` table with same columns as `registration` plus `remarks` (TEXT) and `rejected_at` (TIMESTAMP)
-- [x] Create `send_rejection_email.php` function to send rejection emails with remarks and resubmission instructions
-- [x] Create `ris_reject_form.php` page to input remarks before rejecting
-- [x] Modify `ris_view_details.php` to link reject to the new form instead of direct action
-- [x] Modify `ris_approve_reject.php` to handle rejection with remarks: move record to archive, send email, delete from registration
-- [x] Update `ris_resident_registration.php` to exclude moved records (archived)
-- [x] Test rejection flow: input remarks, send email, move to archive
-- [x] Verify archived records are not shown in main list
-- [x] Ensure images and data integrity during move
-- [x] Add "View Archive" button to ris_resident_registration.php
-- [x] Create ris_registration_archive.php page to display archived registrations
-- [x] Create ris_archive_details.php page to view archived registration details
+## Tasks to Complete:
+- [x] Remove Resident tab button from the filter tabs section.
+- [x] Modify loadUsers JavaScript function to filter out users with role 'Resident' from the displayed table.
+- [x] Update add user modal: Remove 'Resident' option from the role select dropdown.
+- [x] Remove the status select field from the add user modal and set status to 'approved' by default in form submission.
+- [x] Enhance the modal design: Improve spacing, padding, shadows, and colors for better aesthetics.
+- [x] Test the changes by launching the page in browser to verify functionality.
+- [x] Confirm with user that changes are satisfactory.
+- [ ] Add success modal for successful user addition.
+- [ ] Add success modal for successful user removal.
+- [ ] Add error modal for duplicate user entries (same name, email, password).
+- [ ] Implement strong password requirements (8 chars, uppercase, lowercase, number, special char).
+- [ ] Add CAPTCHA image and validation to add user modal.
+- [ ] Update JavaScript to handle new validations and modals.

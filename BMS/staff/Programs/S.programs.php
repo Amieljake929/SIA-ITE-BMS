@@ -74,11 +74,26 @@ function is_valid_image($tmpPath, &$extOut) {
 }
 
 /* ==============================
-   Handle POST (upload/delete)
+   Handle POST (upload/delete/toggle)
    ============================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) {
         set_flash('error', 'Invalid CSRF token.');
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit();
+    }
+
+    /* ---- Toggle Program ---- */
+    if ($_POST['action'] === 'toggle_program') {
+        $program_name = $_POST['program_name'] ?? '';
+        $is_enabled = (int)($_POST['is_enabled'] ?? 0);
+        if ($program_name === 'anti_rabies') {
+            $stmt = $conn->prepare("UPDATE program_settings SET is_enabled = ? WHERE program_name = ?");
+            $stmt->bind_param('is', $is_enabled, $program_name);
+            $stmt->execute();
+            $stmt->close();
+            set_flash('success', 'Anti Rabies program ' . ($is_enabled ? 'enabled' : 'disabled') . '.');
+        }
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit();
     }
@@ -298,6 +313,42 @@ $flash = get_flash();
       </form>
     </section>
 
+    <!-- Program Settings -->
+    <section class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fa-solid fa-cogs mr-2 text-green-700"></i> Program Settings
+      </h2>
+
+      <?php
+      // Fetch program settings
+      $settings = [];
+      $settingsQuery = $conn->query("SELECT program_name, is_enabled FROM program_settings");
+      if ($settingsQuery) {
+          while ($row = $settingsQuery->fetch_assoc()) {
+              $settings[$row['program_name']] = $row['is_enabled'];
+          }
+      }
+      ?>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+          <div>
+            <h3 class="font-semibold text-gray-800">Anti Rabies Program</h3>
+            <p class="text-sm text-gray-600">Enable or disable the anti rabies registration program for residents.</p>
+          </div>
+          <form method="POST" class="inline">
+            <input type="hidden" name="csrf" value="<?php echo htmlspecialchars($csrf); ?>">
+            <input type="hidden" name="action" value="toggle_program">
+            <input type="hidden" name="program_name" value="anti_rabies">
+            <input type="hidden" name="is_enabled" value="<?php echo $settings['anti_rabies'] ? 0 : 1; ?>">
+            <button type="submit" class="px-4 py-2 rounded-lg <?php echo $settings['anti_rabies'] ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'; ?> text-white text-sm">
+              <?php echo $settings['anti_rabies'] ? 'Disable' : 'Enable'; ?>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <!-- Gallery -->
     <section class="bg-white rounded-2xl shadow-lg p-6">
       <div class="flex items-center justify-between mb-4">
@@ -345,6 +396,87 @@ $flash = get_flash();
               </div>
             </div>
           <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </section>
+
+    <!-- Registrations -->
+    <section class="bg-white rounded-2xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-800 flex items-center">
+          <i class="fa-solid fa-list-check mr-2 text-green-700"></i> Registrations
+        </h2>
+        <?php
+        // Fetch registrations count
+        $regCountQuery = $conn->query("SELECT COUNT(*) as count FROM registration_anti_rabies");
+        $regCount = $regCountQuery ? $regCountQuery->fetch_assoc()['count'] : 0;
+        ?>
+        <p class="text-xs text-gray-500"><?php echo $regCount; ?> registration(s)</p>
+      </div>
+
+      <?php
+      // Fetch registrations
+      $registrations = [];
+      $regQuery = $conn->query("SELECT id, owner_first_name, owner_middle_name, owner_last_name, pet_name, status, application_date FROM registration_anti_rabies ORDER BY application_date DESC");
+      if ($regQuery) {
+          while ($row = $regQuery->fetch_assoc()) {
+              $registrations[] = $row;
+          }
+      }
+      ?>
+
+      <?php if (empty($registrations)): ?>
+        <div class="text-gray-500 text-sm">No registrations yet.</div>
+      <?php else: ?>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto border-collapse">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner Name</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pet Name</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registration Type</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Application Date</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <?php foreach ($registrations as $reg): ?>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($reg['id']); ?></td>
+                  <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                    <?php
+                    $ownerName = trim($reg['owner_first_name'] . ' ' . ($reg['owner_middle_name'] ? $reg['owner_middle_name'] . ' ' : '') . $reg['owner_last_name']);
+                    echo htmlspecialchars($ownerName);
+                    ?>
+                  </td>
+                  <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($reg['pet_name']); ?></td>
+                  <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">Anti Rabies</td>
+                  <td class="px-4 py-2 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                      <?php
+                      switch ($reg['status']) {
+                          case 'Pending':
+                              echo 'bg-yellow-100 text-yellow-800';
+                              break;
+                          case 'Approved':
+                              echo 'bg-green-100 text-green-800';
+                              break;
+                          case 'Rejected':
+                              echo 'bg-red-100 text-red-800';
+                              break;
+                          default:
+                              echo 'bg-gray-100 text-gray-800';
+                      }
+                      ?>">
+                      <?php echo htmlspecialchars($reg['status']); ?>
+                    </span>
+                  </td>
+                  <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars(date('M d, Y h:i A', strtotime($reg['application_date']))); ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
         </div>
       <?php endif; ?>
     </section>
