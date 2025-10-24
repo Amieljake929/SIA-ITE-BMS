@@ -22,6 +22,10 @@ $sql = "
     ORDER BY rejected_at DESC
 ";
 $result = $conn->query($sql);
+
+// Get archived users data
+$sql_users = "SELECT * FROM users_archive ORDER BY created_at DESC";
+$result_users = $conn->query($sql_users);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -92,6 +96,12 @@ $result = $conn->query($sql);
     <?php unset($_SESSION['message']); ?>
     <?php endif; ?>
 
+    <!-- Tabs for Archive Types -->
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+      <button data-archive="registration" class="archive-tab px-4 py-2 rounded-full bg-orange-700 text-white hover:bg-orange-800">Registration Archive</button>
+      <button data-archive="users" class="archive-tab px-4 py-2 rounded-full bg-white border border-orange-700 text-orange-800 hover:bg-orange-50">Users Archive</button>
+    </div>
+
     <div class="flex flex-col sm:flex-row gap-4 mb-6">
       <div class="flex-1">
         <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
@@ -100,13 +110,14 @@ $result = $conn->query($sql);
       </div>
     </div>
 
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+    <!-- Registration Archive Table -->
+    <div id="registrationArchive" class="archive-section bg-white shadow-md rounded-lg overflow-hidden mb-6">
       <div class="px-6 py-4 border-b border-gray-200 bg-orange-100">
         <h2 class="text-lg font-semibold text-orange-900">Archived Registrations</h2>
         <p class="text-sm text-orange-700 mt-1">Rejected resident registration applications</p>
       </div>
       <div class="overflow-x-auto">
-        <table class="min-w-full text-sm text-left text-gray-700" id="archiveTable">
+        <table class="min-w-full text-sm text-left text-gray-700" id="registrationTable">
           <thead class="bg-orange-800 text-white">
             <tr>
               <th class="px-4 py-2">ID</th>
@@ -119,7 +130,7 @@ $result = $conn->query($sql);
               <th class="px-4 py-2">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200" id="tableBody">
+          <tbody class="divide-y divide-gray-200" id="registrationTableBody">
             <?php if ($result && $result->num_rows > 0): ?>
               <?php while($row = $result->fetch_assoc()): ?>
                 <tr class="hover:bg-gray-50" data-name="<?= htmlspecialchars(strtolower($row['full_name'])) ?>"
@@ -147,6 +158,55 @@ $result = $conn->query($sql);
             <?php else: ?>
               <tr>
                 <td colspan="8" class="px-4 py-6 text-center text-gray-500">No archived registrations found.</td>
+              </tr>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Users Archive Table -->
+    <div id="usersArchive" class="archive-section bg-white shadow-md rounded-lg overflow-hidden hidden">
+      <div class="px-6 py-4 border-b border-gray-200 bg-purple-100">
+        <h2 class="text-lg font-semibold text-purple-900">Archived Users</h2>
+        <p class="text-sm text-purple-700 mt-1">Removed BMS user accounts</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left text-gray-700" id="usersTable">
+          <thead class="bg-purple-800 text-white">
+            <tr>
+              <th class="px-4 py-2">ID</th>
+              <th class="px-4 py-2">Full Name</th>
+              <th class="px-4 py-2">Email</th>
+              <th class="px-4 py-2">Role</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">Created At</th>
+              <th class="px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200" id="usersTableBody">
+            <?php if ($result_users && $result_users->num_rows > 0): ?>
+              <?php while($row = $result_users->fetch_assoc()): ?>
+                <tr class="hover:bg-gray-50" data-name="<?= htmlspecialchars(strtolower($row['full_name'])) ?>"
+                    data-email="<?= htmlspecialchars(strtolower($row['email'])) ?>">
+
+                  <td class="px-4 py-2 font-mono text-xs"><?= htmlspecialchars($row['id']) ?></td>
+                  <td class="px-4 py-2"><?= htmlspecialchars($row['full_name']) ?></td>
+                  <td class="px-4 py-2 text-xs text-gray-600"><?= htmlspecialchars($row['email']) ?></td>
+                  <td class="px-4 py-2"><?= htmlspecialchars($row['role']) ?></td>
+                  <td class="px-4 py-2 text-xs text-gray-500"><?= htmlspecialchars($row['status']) ?></td>
+                  <td class="px-4 py-2 text-xs text-gray-500"><?= htmlspecialchars($row['created_at']) ?></td>
+                  <td class="px-4 py-2">
+                    <button class="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded hover:bg-purple-700 transition"
+                            onclick="viewUserDetails(<?= htmlspecialchars($row['id']) ?>)">
+                      <i class="fas fa-eye mr-1"></i> View Details
+                    </button>
+                  </td>
+                </tr>
+              <?php endwhile; ?>
+            <?php else: ?>
+              <tr>
+                <td colspan="7" class="px-4 py-6 text-center text-gray-500">No archived users found.</td>
               </tr>
             <?php endif; ?>
           </tbody>
@@ -182,10 +242,33 @@ $result = $conn->query($sql);
   </script>
 
   <script>
+    // Archive Tabs
+    let currentArchive = 'registration';
+
+    document.querySelectorAll('.archive-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.archive-tab').forEach(b => b.classList.remove('bg-orange-700','text-white'));
+        document.querySelectorAll('.archive-tab').forEach(b => b.classList.add('bg-white','text-orange-800'));
+        btn.classList.add('bg-orange-700','text-white');
+        btn.classList.remove('bg-white','text-orange-800');
+
+        currentArchive = btn.dataset.archive;
+        showArchive(currentArchive);
+      });
+    });
+
+    function showArchive(type) {
+      document.querySelectorAll('.archive-section').forEach(section => {
+        section.classList.add('hidden');
+      });
+      document.getElementById(type + 'Archive').classList.remove('hidden');
+    }
+
     // Live Search
     function filterTable() {
       const searchInput = document.getElementById('searchInput').value.toLowerCase();
-      const tableRows = document.querySelectorAll('#tableBody tr');
+      const tableBodyId = currentArchive === 'registration' ? 'registrationTableBody' : 'usersTableBody';
+      const tableRows = document.querySelectorAll('#' + tableBodyId + ' tr');
 
       tableRows.forEach(row => {
         const name = row.dataset.name || '';
@@ -203,7 +286,14 @@ $result = $conn->query($sql);
 
     // Attach event listener
     document.getElementById('searchInput').addEventListener('keyup', filterTable);
+
+    // User Details Modal (placeholder)
+    function viewUserDetails(userId) {
+      alert('User details for ID: ' + userId + ' (Feature to be implemented)');
+    }
   </script>
 </body>
 </html>
-<?php $conn->close(); ?>
+<?php
+$conn->close();
+?>

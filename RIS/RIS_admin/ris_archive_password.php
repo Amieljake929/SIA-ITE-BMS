@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     // Get admin password from database
-    $stmt = $conn->prepare("SELECT password FROM users WHERE id = ? AND role = 'admin'");
+    $stmt = $conn->prepare("SELECT password FROM ris_users WHERE id = ? AND role = 'admin'");
     $stmt->bind_param("i", $_SESSION['user_id']);
     $stmt->execute();
     $result = $stmt->get_result();
